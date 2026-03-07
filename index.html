@@ -548,6 +548,7 @@
 <header>
   <h1>Peněženka</h1>
   <span>finance tracker</span>
+  <span id="syncStatus" style="font-size:10px;letter-spacing:0.1em;color:var(--muted)"></span>
   <div class="month-nav">
     <button onclick="changeMonth(-1)">←</button>
     <div class="month-label" id="monthLabel">–</div>
@@ -639,15 +640,65 @@ const CAT_COLORS = [
   '#fb923c','#34d399','#e879f9','#38bdf8','#a3e635'
 ];
 
-let transactions = JSON.parse(localStorage.getItem('txs') || '[]');
+const API_URL = 'https://script.google.com/macros/s/AKfycbzlGw_eECPl4ZmQy0K5uGyjqTDbPpfCEAoUuHski5b1L356iqC8CtLl4HFtloSZ9FkrHA/exec';
+
+let transactions = [];
 let currentType = 'income';
 let currentFilter = 'all';
 let currentDate = new Date();
-
-function save() { localStorage.setItem('txs', JSON.stringify(transactions)); }
+let isSyncing = false;
 
 function fmt(n) {
   return Math.abs(n).toLocaleString('cs-CZ') + ' Kč';
+}
+
+function setSyncStatus(status) {
+  const el = document.getElementById('syncStatus');
+  if (!el) return;
+  const states = {
+    loading: { text: '⟳ Načítám...', color: 'var(--muted)' },
+    saving:  { text: '⟳ Ukládám...', color: 'var(--muted)' },
+    ok:      { text: '✓ Synchronizováno', color: 'var(--green)' },
+    error:   { text: '✗ Chyba připojení', color: 'var(--red)' },
+  };
+  const s = states[status] || states.ok;
+  el.textContent = s.text;
+  el.style.color = s.color;
+}
+
+async function loadFromCloud() {
+  setSyncStatus('loading');
+  try {
+    const res = await fetch(API_URL);
+    const data = await res.json();
+    transactions = data
+      .filter(r => r.id)
+      .map(r => ({
+        id: Number(r.id),
+        type: r.type,
+        desc: r.desc,
+        amount: parseFloat(r.amount),
+        cat: r.cat,
+        date: r.date,
+      }));
+    setSyncStatus('ok');
+  } catch (e) {
+    setSyncStatus('error');
+  }
+  render();
+}
+
+async function saveToCloud(action, payload) {
+  setSyncStatus('saving');
+  try {
+    await fetch(API_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action, ...payload }),
+    });
+    setSyncStatus('ok');
+  } catch (e) {
+    setSyncStatus('error');
+  }
 }
 
 function setType(t) {
@@ -697,17 +748,18 @@ function addTransaction() {
     return;
   }
 
-  transactions.unshift({ id: Date.now(), type: currentType, desc, amount, cat, date });
-  save();
+  const t = { id: Date.now(), type: currentType, desc, amount, cat, date };
+  transactions.unshift(t);
   document.getElementById('descInput').value = '';
   document.getElementById('amountInput').value = '';
   render();
+  await saveToCloud('add', { transaction: t });
 }
 
-function deleteTransaction(id) {
+async function deleteTransaction(id) {
   transactions = transactions.filter(t => t.id !== id);
-  save();
   render();
+  await saveToCloud('delete', { id });
 }
 
 function render() {
@@ -856,34 +908,10 @@ function renderTxList() {
   }).join('');
 }
 
-// SEED DATA
-function seedData() {
-  if (transactions.length > 0) return;
-  const now = new Date();
-  const y = now.getFullYear();
-  const m = now.getMonth();
-  const seed = [
-    { type: 'income', desc: 'Výplata', amount: 38000, cat: 'Mzda', date: `${y}-${String(m+1).padStart(2,'0')}-01` },
-    { type: 'expense', desc: 'Nájem', amount: 12500, cat: 'Bydlení', date: `${y}-${String(m+1).padStart(2,'0')}-01` },
-    { type: 'expense', desc: 'Rohlíky a jogurty', amount: 320, cat: 'Jídlo', date: `${y}-${String(m+1).padStart(2,'0')}-03` },
-    { type: 'expense', desc: 'MHD měsíční jízdné', amount: 550, cat: 'Doprava', date: `${y}-${String(m+1).padStart(2,'0')}-02` },
-    { type: 'expense', desc: 'Netflix + Spotify', amount: 480, cat: 'Zábava', date: `${y}-${String(m+1).padStart(2,'0')}-05` },
-    { type: 'income', desc: 'Freelance projekt', amount: 8500, cat: 'Freelance', date: `${y}-${String(m+1).padStart(2,'0')}-10` },
-    { type: 'expense', desc: 'Večeře v restauraci', amount: 890, cat: 'Jídlo', date: `${y}-${String(m+1).padStart(2,'0')}-12` },
-    { type: 'expense', desc: 'Nové tenisky', amount: 2200, cat: 'Oblečení', date: `${y}-${String(m+1).padStart(2,'0')}-14` },
-    { type: 'expense', desc: 'Lékárna', amount: 340, cat: 'Zdraví', date: `${y}-${String(m+1).padStart(2,'0')}-15` },
-    { type: 'expense', desc: 'Supermarket týdenní nákup', amount: 1840, cat: 'Jídlo', date: `${y}-${String(m+1).padStart(2,'0')}-16` },
-    { type: 'expense', desc: 'Posilovna měsíčně', amount: 750, cat: 'Sport', date: `${y}-${String(m+1).padStart(2,'0')}-01` },
-  ];
-  transactions = seed.map((t, i) => ({ ...t, id: Date.now() + i }));
-  save();
-}
-
 // INIT
 updateCatSelect();
 document.getElementById('dateInput').value = new Date().toISOString().split('T')[0];
-seedData();
-render();
+loadFromCloud();
 </script>
 </body>
 </html>
