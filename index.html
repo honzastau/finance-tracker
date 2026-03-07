@@ -153,6 +153,37 @@ header { background:var(--surface); border-bottom:1px solid var(--border); paddi
 .dl-pct  { font-size:10px; color:var(--muted); margin-left:2px; }
 .empty-donut { padding:16px 0; color:var(--muted); font-size:11px; font-style:italic; text-align:center; }
 
+/* ── SETTINGS DROPDOWN ── */
+.settings-wrap { position:relative; flex-shrink:0; margin-left:8px; }
+.btn-settings { background:none; border:1px solid var(--border); color:var(--muted); width:34px; height:34px; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:15px; transition:all 0.15s; }
+.btn-settings:hover { border-color:var(--accent); color:var(--accent); background:var(--accent-light); }
+.btn-settings.open { border-color:var(--accent); color:var(--accent); background:var(--accent-light); }
+
+.settings-dropdown { position:absolute; top:calc(100% + 8px); right:0; width:360px; background:var(--surface); border:1px solid var(--border); box-shadow:0 8px 28px rgba(42,34,24,0.13); z-index:300; opacity:0; pointer-events:none; transform:translateY(-6px); transition:opacity 0.18s, transform 0.18s cubic-bezier(0.4,0,0.2,1); }
+.settings-dropdown.open { opacity:1; pointer-events:all; transform:translateY(0); }
+.sd-header { padding:11px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+.sd-title { font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:10px; letter-spacing:0.16em; text-transform:uppercase; color:var(--muted); }
+.sd-close { background:none; border:none; color:var(--muted); cursor:pointer; font-size:16px; line-height:1; transition:color 0.12s; }
+.sd-close:hover { color:var(--text); }
+.sd-body { padding:14px 16px; display:flex; flex-direction:column; gap:14px; }
+.sd-section-label { font-family:'Bricolage Grotesque',sans-serif; font-size:10px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:var(--muted); margin-bottom:6px; display:flex; align-items:center; justify-content:space-between; }
+.sd-type-tabs { display:grid; grid-template-columns:1fr 1fr 1fr; border:1px solid var(--border); margin-bottom:10px; }
+.sd-tab { padding:7px; background:none; border:none; cursor:pointer; font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:var(--muted); transition:all 0.15s; border-right:1px solid var(--border); }
+.sd-tab:last-child { border-right:none; }
+.sd-tab.active.income  { background:var(--green-bg); color:var(--green); }
+.sd-tab.active.expense { background:var(--red-bg); color:var(--red); }
+.sd-tab.active.savings { background:var(--blue-bg); color:var(--blue); }
+.cat-tags { display:flex; flex-wrap:wrap; gap:6px; min-height:32px; }
+.cat-tag { display:flex; align-items:center; gap:5px; background:var(--surface2); border:1px solid var(--border); padding:4px 8px; font-size:11px; color:var(--text); }
+.cat-tag-del { background:none; border:none; color:var(--muted); cursor:pointer; font-size:13px; line-height:1; padding:0; transition:color 0.1s; }
+.cat-tag-del:hover { color:var(--red); }
+.cat-add-row { display:flex; gap:6px; margin-top:4px; }
+.cat-add-input { flex:1; background:var(--surface2); border:1px solid var(--border); color:var(--text); font-family:'Plus Jakarta Sans',sans-serif; font-size:12px; padding:7px 10px; outline:none; transition:border-color 0.12s; }
+.cat-add-input:focus { border-color:var(--accent); }
+.cat-add-input::placeholder { color:var(--muted); }
+.cat-add-btn { background:var(--accent); border:none; color:#fff; font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; padding:7px 12px; cursor:pointer; transition:opacity 0.15s; white-space:nowrap; }
+.cat-add-btn:hover { opacity:0.82; }
+
 @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
 @media(max-width:900px){
   .layout{grid-template-columns:1fr;padding:16px;}
@@ -201,6 +232,30 @@ header { background:var(--surface); border-bottom:1px solid var(--border); paddi
         </div>
         <input  class="finput"  id="dateInput" type="date">
         <button class="btn-submit" onclick="addTransaction()">Přidat transakci</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="settings-wrap">
+    <button class="btn-settings" id="btnSettings" onclick="toggleSettings()" title="Nastavení kategorií">⚙</button>
+    <div class="settings-dropdown" id="settingsDropdown">
+      <div class="sd-header">
+        <span class="sd-title">Správa kategorií</span>
+        <button class="sd-close" onclick="closeSettings()">×</button>
+      </div>
+      <div class="sd-body">
+        <div>
+          <div class="sd-type-tabs">
+            <button class="sd-tab active income" id="sdIncome"  onclick="setSdType('income')">↑ Příjmy</button>
+            <button class="sd-tab expense"        id="sdExpense" onclick="setSdType('expense')">↓ Výdaje</button>
+            <button class="sd-tab savings"        id="sdSavings" onclick="setSdType('savings')">⬡ Úspory</button>
+          </div>
+          <div class="cat-tags" id="catTags"></div>
+          <div class="cat-add-row">
+            <input class="cat-add-input" id="catAddInput" type="text" placeholder="Nová kategorie..." onkeydown="if(event.key==='Enter')addCategory()">
+            <button class="cat-add-btn" onclick="addCategory()">+ Přidat</button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -491,6 +546,84 @@ function setFilter(f, el) {
   renderTxList();
 }
 
+// ── SETTINGS ─────────────────────────────────────────────
+let sdType = 'income';
+
+function toggleSettings() {
+  const dd  = document.getElementById('settingsDropdown');
+  const btn = document.getElementById('btnSettings');
+  const isOpen = dd.classList.toggle('open');
+  btn.classList.toggle('open', isOpen);
+  if (isOpen) { renderCatTags(); setTimeout(()=>document.getElementById('catAddInput').focus(), 50); }
+}
+function closeSettings() {
+  document.getElementById('settingsDropdown').classList.remove('open');
+  document.getElementById('btnSettings').classList.remove('open');
+}
+document.addEventListener('click', e => {
+  if (!document.querySelector('.settings-wrap').contains(e.target)) closeSettings();
+});
+
+function setSdType(t) {
+  sdType = t;
+  ['income','expense','savings'].forEach(x => {
+    document.getElementById('sd' + x.charAt(0).toUpperCase() + x.slice(1)).classList.toggle('active', x===t);
+  });
+  renderCatTags();
+  document.getElementById('catAddInput').value = '';
+  document.getElementById('catAddInput').focus();
+}
+
+function renderCatTags() {
+  const cats = CATEGORIES[sdType];
+  document.getElementById('catTags').innerHTML = cats.map((c,i) =>
+    `<div class="cat-tag">
+      <span>${ICONS[c]||'•'} ${c}</span>
+      <button class="cat-tag-del" onclick="removeCategory(${i})" title="Smazat">×</button>
+    </div>`
+  ).join('');
+}
+
+function addCategory() {
+  const inp = document.getElementById('catAddInput');
+  const val = inp.value.trim();
+  if (!val) return;
+  if (CATEGORIES[sdType].includes(val)) { inp.select(); return; }
+  CATEGORIES[sdType].push(val);
+  inp.value = '';
+  renderCatTags();
+  updateCatSelect();
+  saveCategories();
+}
+
+function removeCategory(idx) {
+  const cat = CATEGORIES[sdType][idx];
+  // don't remove if used by existing transactions
+  const inUse = transactions.some(t => t.type === sdType && t.cat === cat);
+  if (inUse) {
+    showError(`Kategorii "${cat}" nelze smazat — je použita v transakcích`);
+    return;
+  }
+  CATEGORIES[sdType].splice(idx, 1);
+  renderCatTags();
+  updateCatSelect();
+  saveCategories();
+}
+
+function saveCategories() {
+  localStorage.setItem('ft_cats', JSON.stringify(CATEGORIES));
+}
+
+function loadCategories() {
+  const saved = localStorage.getItem('ft_cats');
+  if (saved) {
+    const c = JSON.parse(saved);
+    CATEGORIES.income  = c.income  || CATEGORIES.income;
+    CATEGORIES.expense = c.expense || CATEGORIES.expense;
+    CATEGORIES.savings = c.savings || CATEGORIES.savings;
+  }
+}
+
 // ── RENDER ───────────────────────────────────────────────
 function render() {
   const txs    = getFilteredTxs();
@@ -574,7 +707,7 @@ function renderChart() {
   const isYear = selectedMonth === -1;
   document.getElementById('chartTitle').textContent = isYear
     ? `${selectedYear} — přehled po měsících`
-    : `${selectedYear} — ${MONTHS[selectedMonth]} zvýrazněn`;
+    : `${selectedYear} — ${MONTHS[selectedMonth]}`;
 
   // always all 12 months of selected year
   const data = MONTHS_SHORT.map((lbl,mi) => {
@@ -650,6 +783,7 @@ function renderTxList() {
 
 // ── INIT ─────────────────────────────────────────────────
 async function init() {
+  loadCategories();
   updateCatSelect();
   document.getElementById('dateInput').value = new Date().toISOString().split('T')[0];
   buildMonthPills();
