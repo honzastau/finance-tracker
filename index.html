@@ -669,8 +669,9 @@ function setSyncStatus(status) {
 async function loadFromCloud() {
   setSyncStatus('loading');
   try {
-    const res = await fetch(API_URL);
-    const data = await res.json();
+    const res = await fetch(API_URL, { redirect: 'follow' });
+    const text = await res.text();
+    const data = JSON.parse(text);
     transactions = data
       .filter(r => r.id)
       .map(r => ({
@@ -679,10 +680,11 @@ async function loadFromCloud() {
         desc: r.desc,
         amount: parseFloat(r.amount),
         cat: r.cat,
-        date: r.date,
+        date: String(r.date),
       }));
     setSyncStatus('ok');
   } catch (e) {
+    console.error('Load error:', e);
     setSyncStatus('error');
   }
   render();
@@ -693,10 +695,13 @@ async function saveToCloud(action, payload) {
   try {
     await fetch(API_URL, {
       method: 'POST',
+      redirect: 'follow',
+      headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify({ action, ...payload }),
     });
     setSyncStatus('ok');
   } catch (e) {
+    console.error('Save error:', e);
     setSyncStatus('error');
   }
 }
@@ -732,7 +737,7 @@ function getMonthTxs() {
   });
 }
 
-function addTransaction() {
+async function addTransaction() {
   const desc = document.getElementById('descInput').value.trim();
   const amount = parseFloat(document.getElementById('amountInput').value);
   const cat = document.getElementById('catSelect').value;
