@@ -1118,12 +1118,22 @@ async function saveTxCat(id, newCat) {
   const tx = transactions.find(t => t.id === Number(id));
   if (!tx) return;
   if (tx.cat === newCat) return;
+  const oldCat = tx.cat;
   tx.cat = newCat;
   render();
   try {
-    await apiDelete(tx.id);
-    await fetch(API_URL + '?action=add&tx=' + encodeURIComponent(JSON.stringify(tx)));
-  } catch(e) { console.warn('saveTxCat failed', e); }
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ action: 'saveAll', txs: transactions })
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error);
+  } catch(e) {
+    console.error('saveTxCat failed:', e);
+    tx.cat = oldCat;
+    render();
+  }
 }
 
 function showBarTip(e, text, color) {
