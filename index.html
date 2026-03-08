@@ -138,7 +138,8 @@ header { background:var(--surface); border-bottom:1px solid var(--border); paddi
 .tx-cat  { font-size:10px; color:var(--muted); margin-top:1px; }
 .tx-cat-name { cursor:pointer; border-bottom:1px dashed transparent; transition:border-color 0.15s; }
 .tx-row:hover .tx-cat-name { border-bottom-color:var(--muted); }
-.tx-cat-select { font-family:'Plus Jakarta Sans',sans-serif; font-size:10px; color:var(--text); background:var(--surface); border:1px solid var(--accent); padding:1px 4px; cursor:pointer; outline:none; }
+.tx-cat-select { font-family:'Plus Jakarta Sans',sans-serif; font-size:10px; color:var(--muted); background:transparent; border:none; border-bottom:1px dashed var(--border); padding:0 2px; cursor:pointer; outline:none; max-width:160px; }
+.tx-cat-select:hover, .tx-cat-select:focus { border-bottom-color:var(--accent); color:var(--text); }
 .cat-tag-name { cursor:pointer; flex:1; }
 .cat-tag-name:hover { color:var(--accent); }
 .cat-rename-input { font-family:'Plus Jakarta Sans',sans-serif; font-size:11px; color:var(--text); background:var(--surface); border:1px solid var(--accent); padding:2px 6px; flex:1; min-width:0; outline:none; }
@@ -283,6 +284,7 @@ header { background:var(--surface); border-bottom:1px solid var(--border); paddi
   </div>
 </header>
 
+<div id="barTip" style="position:fixed;display:none;padding:4px 10px;border-radius:3px;font-size:11px;font-weight:600;color:#fff;pointer-events:none;z-index:9999;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,0.18);"></div>
 <div class="layout">
   <div class="main-col">
 
@@ -366,7 +368,7 @@ header { background:var(--surface); border-bottom:1px solid var(--border); paddi
     <!-- LINE CHART CARD -->
     <div class="card" style="margin-top:16px" id="lineChartCard">
       <div class="card-header" style="flex-wrap:wrap;gap:8px;">
-        <span class="card-title">Vývoj kategorie v čase</span>
+        <span class="card-title" id="lineChartTitle">${selectedYear} — vývoj kategorie</span>
         <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
           <div style="display:flex;border:1px solid var(--border);">
             <button class="lc-type-btn active income" id="lcBtnIncome" onclick="setLcType('income')">↑ Příjmy</button>
@@ -633,9 +635,9 @@ function startRenameCategory(idx) {
   const oldName = CATEGORIES[sdType][idx];
   tag.innerHTML = `
     <input class="cat-rename-input" value="${oldName}" id="catRenameInput-${idx}"
-      onkeydown="if(event.key==='Enter')commitRename(${idx});if(event.key==='Escape')renderCatTags();"
-      onblur="commitRename(${idx})">
-    <button class="cat-add-btn" onclick="commitRename(${idx})">✓</button>`;
+      onkeydown="if(event.key==='Enter'){event.preventDefault();commitRename(${idx});}if(event.key==='Escape')renderCatTags();">
+    <button class="cat-add-btn" onmousedown="event.preventDefault();commitRename(${idx})">✓</button>
+    <button class="cat-tag-del" onmousedown="event.preventDefault();renderCatTags()">✕</button>`;
   const inp = document.getElementById('catRenameInput-' + idx);
   inp.focus(); inp.select();
 }
@@ -646,8 +648,7 @@ function commitRename(idx) {
   const newName = inp.value.trim();
   const oldName = CATEGORIES[sdType][idx];
   if (!newName || newName === oldName) { renderCatTags(); return; }
-  if (CATEGORIES[sdType].includes(newName)) { inp.select(); return; }
-  // update all existing transactions
+  if (CATEGORIES[sdType].some((c,i)=>c===newName && i!==idx)) { inp.select(); return; }
   transactions.forEach(t => { if (t.type === sdType && t.cat === oldName) t.cat = newName; });
   CATEGORIES[sdType][idx] = newName;
   if (ICONS[oldName]) { ICONS[newName] = ICONS[oldName]; }
@@ -749,6 +750,9 @@ function renderLineChart() {
   const innerW = W - PAD.left - PAD.right;
   const innerH = H - PAD.top - PAD.bottom;
 
+  // update card title
+  document.getElementById('lineChartTitle').textContent = `${selectedYear} — vývoj kategorie`;
+
   // Collect monthly totals for the selected year
   const vals = MONTHS_SHORT.map((_,mi) => {
     const txs = transactions.filter(t => {
@@ -799,7 +803,12 @@ function renderLineChart() {
     return `<text x="${x.toFixed(1)}" y="${(H-6).toFixed(1)}" text-anchor="middle" fill="${isActive?'var(--accent)':'var(--muted)'}" font-size="8" font-weight="${isActive?'700':'400'}" font-family="Bricolage Grotesque,sans-serif" text-transform="uppercase">${m}</text>`;
   }).join('');
 
-  const dots = '';
+  const dots = points.map((p,i) =>
+    `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="5" fill="transparent" stroke="transparent"
+      onmouseenter="showBarTip(event,'${MONTHS_SHORT[i]}: ${p.v>0?fmtShort(p.v):'0 Kč'}','${colorSolid}')"
+      onmouseleave="hideBarTip()"/>
+     <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="2.5" fill="${p.v>0?colorSolid:'var(--border)'}" pointer-events="none"/>`
+  ).join('');
 
   const gradId = 'lcGrad_' + lcType;
   svg.setAttribute('width', W);
@@ -885,15 +894,15 @@ function render() {
 
 // ── DONUT ────────────────────────────────────────────────
 function getGradientColors(type, n) {
-  // wider spread for better distinction between slices
+  // biggest slice (index 0) = darkest, smallest = lightest
   const palettes = {
-    income:  [[210,240,190],[30,100,25]],   // very light green → very dark green
-    expense: [[250,190,170],[140,30,10]],   // very light red → very dark red
-    savings: [[180,215,250],[20,60,160]],   // very light blue → very dark blue
+    income:  [[210,240,190],[30,100,25]],
+    expense: [[250,190,170],[140,30,10]],
+    savings: [[180,215,250],[20,60,160]],
   };
   const [lo, hi] = palettes[type] || palettes.income;
   return Array.from({length:n}, (_,i) => {
-    const t = n===1 ? 0 : i/(n-1);
+    const t = n===1 ? 1 : 1 - i/(n-1); // reversed: i=0 → t=1 (darkest)
     const r = Math.round(lo[0]+(hi[0]-lo[0])*t);
     const g = Math.round(lo[1]+(hi[1]-lo[1])*t);
     const b = Math.round(lo[2]+(hi[2]-lo[2])*t);
@@ -961,9 +970,7 @@ function renderDonut(type, txs, total) {
 // ── BAR CHART ────────────────────────────────────────────
 function renderChart() {
   const isYear = selectedMonth === -1;
-  document.getElementById('chartTitle').textContent = isYear
-    ? `${selectedYear} — přehled po měsících`
-    : `${selectedYear} — ${MONTHS[selectedMonth]}`;
+  document.getElementById('chartTitle').textContent = `${selectedYear} — přehled`;
 
   const data = MONTHS_SHORT.map((lbl,mi) => {
     const t = transactions.filter(x=>{
@@ -1022,12 +1029,12 @@ function renderChart() {
     const lblWeight = d.active && !isYear ? '700' : '400';
     return `
       <g opacity="${opacity}">
-        <rect x="${bx.toFixed(1)}" y="${(baseY-ih).toFixed(1)}" width="${barW}" height="${ih.toFixed(1)}" fill="var(--green-bar)">
-          <title>+${fmtShort(d.income)}</title></rect>
-        <rect x="${(bx+barW+gap).toFixed(1)}" y="${(baseY-eh).toFixed(1)}" width="${barW}" height="${eh.toFixed(1)}" fill="var(--red-bar)">
-          <title>−${fmtShort(d.expense)}</title></rect>
-        <rect x="${(bx+2*(barW+gap)).toFixed(1)}" y="${(baseY-sh).toFixed(1)}" width="${barW}" height="${sh.toFixed(1)}" fill="var(--blue-bar)">
-          <title>úspory: ${fmtShort(d.savings)}</title></rect>
+        <rect x="${bx.toFixed(1)}" y="${(baseY-ih).toFixed(1)}" width="${barW}" height="${ih.toFixed(1)}" fill="var(--green-bar)"
+          onmouseenter="showBarTip(event,'+${fmtShort(d.income)}','#72b05a')" onmouseleave="hideBarTip()"/>
+        <rect x="${(bx+barW+gap).toFixed(1)}" y="${(baseY-eh).toFixed(1)}" width="${barW}" height="${eh.toFixed(1)}" fill="var(--red-bar)"
+          onmouseenter="showBarTip(event,'−${fmtShort(d.expense)}','#e07048')" onmouseleave="hideBarTip()"/>
+        <rect x="${(bx+2*(barW+gap)).toFixed(1)}" y="${(baseY-sh).toFixed(1)}" width="${barW}" height="${sh.toFixed(1)}" fill="var(--blue-bar)"
+          onmouseenter="showBarTip(event,'${fmtShort(d.savings)}','#5b9bd5')" onmouseleave="hideBarTip()"/>
         <text x="${cx.toFixed(1)}" y="${(H-6).toFixed(1)}" text-anchor="middle" fill="${lblColor}" font-size="8" font-weight="${lblWeight}" font-family="Bricolage Grotesque,sans-serif">${d.label}</text>
       </g>`;
   }).join('');
@@ -1061,13 +1068,16 @@ function renderTxList() {
   const sign = t => t.type==='income'?'+' : t.type==='savings'?'⬡' : '−';
   const fmtDate = d => new Date(d).toLocaleDateString('cs-CZ',{day:'numeric',month:'short'});
 
-  el.innerHTML = filtered.map(t => `
+  el.innerHTML = filtered.map(t => {
+    const cats = CATEGORIES[t.type] || [];
+    const opts = cats.map(c => `<option value="${c}"${c===t.cat?' selected':''}>${c}</option>`).join('');
+    return `
     <div class="tx-row" id="txrow-${t.id}">
       <div class="tx-icon">${ICONS[t.cat]||'•'}</div>
       <div style="flex:1;min-width:0">
         <div class="tx-desc">${t.desc}</div>
         <div class="tx-cat">
-          <span class="tx-cat-name" onclick="openCatEdit(${t.id})" title="Klikni pro změnu kategorie">${t.cat}</span>
+          <select class="tx-cat-select" onchange="saveTxCat(${t.id},this.value)">${opts}</select>
           <span style="color:var(--muted);font-size:10px;"> · ${fmtDate(t.date)}</span>
         </div>
       </div>
@@ -1075,27 +1085,8 @@ function renderTxList() {
         <div class="tx-amount ${t.type}">${sign(t)}${t.amount.toLocaleString('cs-CZ')} Kč</div>
         <button class="tx-del" onclick="deleteTransaction(${t.id})">×</button>
       </div>
-    </div>`).join('');
-}
-
-function openCatEdit(id) {
-  const tx = transactions.find(t=>t.id===id);
-  if (!tx) return;
-  const cats = CATEGORIES[tx.type] || [];
-  const catEl = document.querySelector(`#txrow-${id} .tx-cat-name`);
-  if (!catEl) return;
-  const sel = document.createElement('select');
-  sel.className = 'tx-cat-select';
-  cats.forEach(c => {
-    const o = document.createElement('option');
-    o.value = c; o.textContent = c;
-    if (c === tx.cat) o.selected = true;
-    sel.appendChild(o);
-  });
-  sel.onchange = () => saveTxCat(id, sel.value);
-  sel.onblur = () => renderTxList();
-  catEl.replaceWith(sel);
-  sel.focus();
+    </div>`;
+  }).join('');
 }
 
 async function saveTxCat(id, newCat) {
@@ -1108,6 +1099,24 @@ async function saveTxCat(id, newCat) {
   try {
     await fetch(API_URL + `?action=updateCat&id=${id}&cat=${encodeURIComponent(newCat)}`);
   } catch(e) { console.warn('updateCat failed', e); }
+}
+
+function showBarTip(e, text, color) {
+  const tip = document.getElementById('barTip');
+  tip.textContent = text;
+  tip.style.background = color;
+  tip.style.display = 'block';
+  moveTip(e);
+  document.addEventListener('mousemove', moveTip, {passive:true});
+}
+function moveTip(e) {
+  const tip = document.getElementById('barTip');
+  tip.style.left = (e.clientX + 12) + 'px';
+  tip.style.top  = (e.clientY - 28) + 'px';
+}
+function hideBarTip() {
+  document.getElementById('barTip').style.display = 'none';
+  document.removeEventListener('mousemove', moveTip);
 }
 
 // ── INIT ─────────────────────────────────────────────────
