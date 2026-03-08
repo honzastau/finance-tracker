@@ -1115,12 +1115,13 @@ function renderTxList() {
 }
 
 async function saveTxCat(id, newCat) {
+  console.log('saveTxCat called', id, typeof id, newCat);
   const tx = transactions.find(t => t.id === Number(id));
+  console.log('found tx:', tx);
   if (!tx) return;
   if (tx.cat === newCat) return;
   tx.cat = newCat;
   render();
-  // persist to cloud
   try {
     await fetch(API_URL + `?action=updateCat&id=${id}&cat=${encodeURIComponent(newCat)}`);
   } catch(e) { console.warn('updateCat failed', e); }
