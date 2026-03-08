@@ -94,7 +94,7 @@ header { background:var(--surface); border-bottom:1px solid var(--border); paddi
 .stat-value.income  { color:var(--green); }
 .stat-value.expense { color:var(--red); }
 .stat-value.savings { color:var(--blue); }
-.stat-sub { font-size:10px; color:var(--muted); margin-top:5px; font-style:italic; }
+.stat-sub { font-size:10px; color:var(--muted); margin-top:5px; }
 
 /* ── BAR CHART ── */
 .chart-wrap { padding:16px 18px 14px; }
@@ -144,10 +144,10 @@ header { background:var(--surface); border-bottom:1px solid var(--border); paddi
 
 /* ── DONUT ── */
 .donut-section { padding:16px 18px; }
-.donut-wrap { position:relative; width:180px; height:180px; margin:0 auto 16px; }
+.donut-wrap { position:relative; width:220px; height:220px; margin:0 auto 16px; }
 .donut-wrap svg { transform:rotate(-90deg); }
 .donut-center { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; }
-.donut-center-val { font-family:'Plus Jakarta Sans',sans-serif; font-size:17px; font-weight:700; line-height:1; text-align:center; }
+.donut-center-val { font-family:'Plus Jakarta Sans',sans-serif; font-size:19px; font-weight:700; line-height:1; text-align:center; }
 .donut-legend { display:flex; flex-direction:column; gap:7px; }
 .dl-row { display:flex; align-items:center; gap:7px; }
 .dl-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
@@ -348,7 +348,7 @@ header { background:var(--surface); border-bottom:1px solid var(--border); paddi
       <div class="card-header"><span class="card-title">Příjmy</span></div>
       <div class="donut-section">
         <div class="donut-wrap">
-          <svg width="180" height="180" viewBox="0 0 180 180" id="donutIncome"></svg>
+          <svg width="220" height="220" viewBox="0 0 220 220" id="donutIncome"></svg>
           <div class="donut-center">
             <div class="donut-center-val" id="donutIncomeVal" style="color:var(--green)">—</div>
           </div>
@@ -361,7 +361,7 @@ header { background:var(--surface); border-bottom:1px solid var(--border); paddi
       <div class="card-header"><span class="card-title">Výdaje</span></div>
       <div class="donut-section">
         <div class="donut-wrap">
-          <svg width="180" height="180" viewBox="0 0 180 180" id="donutExpense"></svg>
+          <svg width="220" height="220" viewBox="0 0 220 220" id="donutExpense"></svg>
           <div class="donut-center">
             <div class="donut-center-val" id="donutExpenseVal" style="color:var(--red)">—</div>
           </div>
@@ -374,7 +374,7 @@ header { background:var(--surface); border-bottom:1px solid var(--border); paddi
       <div class="card-header"><span class="card-title">Úspory</span></div>
       <div class="donut-section">
         <div class="donut-wrap">
-          <svg width="180" height="180" viewBox="0 0 180 180" id="donutSavings"></svg>
+          <svg width="220" height="220" viewBox="0 0 220 220" id="donutSavings"></svg>
           <div class="donut-center">
             <div class="donut-center-val" id="donutSavingsVal" style="color:var(--blue)">—</div>
           </div>
@@ -748,13 +748,7 @@ function renderLineChart() {
     return `<text x="${x.toFixed(1)}" y="${(H-6).toFixed(1)}" text-anchor="middle" fill="${isActive?'var(--accent)':'var(--muted)'}" font-size="8" font-weight="${isActive?'700':'400'}" font-family="Bricolage Grotesque,sans-serif" text-transform="uppercase">${m}</text>`;
   }).join('');
 
-  const dotRadius = 3.5;
-  const dots = points.map((p,i) => {
-    const isActive = selectedMonth===-1 || selectedMonth===i;
-    return `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${isActive?dotRadius+1:dotRadius}" fill="${isActive?colorSolid:'var(--surface)'}" stroke="${colorSolid}" stroke-width="2">
-      <title>${MONTHS[i]}: ${p.v.toLocaleString('cs-CZ')} Kč</title>
-    </circle>`;
-  }).join('');
+  const dots = '';
 
   const gradId = 'lcGrad_' + lcType;
   svg.setAttribute('width', W);
@@ -778,6 +772,7 @@ function renderLineChart() {
 // ── RENDER ───────────────────────────────────────────────
 function render() {
   const txs    = getFilteredTxs();
+  const isYear = selectedMonth === -1;
   const income  = txs.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
   const expense = txs.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
   const savings = txs.filter(t=>t.type==='savings').reduce((s,t)=>s+t.amount,0);
@@ -795,7 +790,6 @@ function render() {
   document.getElementById('statBalanceSub').textContent = balance>=0 ? 'ušetřeno' : 'přečerpáno';
 
   // ── % change vs previous period ──
-  const isYear = selectedMonth === -1;
   let prevIncome=0, prevExpense=0, prevSavings=0;
   if (isYear) {
     const prev = transactions.filter(t => new Date(t.date).getFullYear() === selectedYear-1);
@@ -850,7 +844,7 @@ function renderDonut(type, txs, total, colors, centerColor) {
   const legEl  = document.getElementById('legend'+capType);
 
   if (!sorted.length) {
-    svgEl.innerHTML = `<circle cx="90" cy="90" r="64" fill="none" stroke="var(--surface2)" stroke-width="18"/>`;
+    svgEl.innerHTML = `<circle cx="110" cy="110" r="80" fill="none" stroke="var(--surface2)" stroke-width="20"/>`;
     valEl.textContent = '—';
     legEl.innerHTML = '<div class="empty-donut">Žádná data</div>';
     return;
@@ -859,7 +853,7 @@ function renderDonut(type, txs, total, colors, centerColor) {
   valEl.textContent = Math.abs(total).toLocaleString('cs-CZ') + ' Kč';
   valEl.style.color = centerColor;
 
-  const cx=90, cy=90, r=64, sw=18;
+  const cx=110, cy=110, r=80, sw=20;
   const circ = 2*Math.PI*r;
   let offset=0, paths='';
 
@@ -959,7 +953,7 @@ function renderTxList() {
     const open  = _openGroups.has(key);
     return `<div>
       <div class="tx-date-row" onclick="toggleGroup('${key}')">
-        <span>${key} <span style="color:var(--border2);margin-left:4px;font-size:9px;">${items.length} pol.</span></span>
+        <span>${key}</span>
         <span class="tx-date-chev" style="transform:rotate(${open?'0':'180'}deg)">▲</span>
       </div>
       <div class="tx-group-body" style="display:${open?'block':'none'}">
