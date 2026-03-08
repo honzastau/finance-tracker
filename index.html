@@ -607,7 +607,8 @@ function closeSettings() {
   document.getElementById('btnSettings').classList.remove('open');
 }
 document.addEventListener('click', e => {
-  if (!document.querySelector('.settings-wrap').contains(e.target)) closeSettings();
+  const wrap = document.querySelector('.settings-wrap');
+  if (wrap && !wrap.contains(e.target)) closeSettings();
 });
 
 function setSdType(t) {
@@ -622,42 +623,58 @@ function setSdType(t) {
 
 function renderCatTags() {
   const cats = CATEGORIES[sdType];
-  document.getElementById('catTags').innerHTML = cats.map((c,i) =>
-    `<div class="cat-tag" id="cattag-${i}">
-      <span class="cat-tag-name" onclick="event.stopPropagation();startRenameCategory(${i})">${ICONS[c]||'•'} ${c}</span>
-      <button class="cat-tag-del" onclick="event.stopPropagation();removeCategory(${i})" title="Smazat">×</button>
-    </div>`
-  ).join('');
+  const container = document.getElementById('catTags');
+  container.innerHTML = '';
+  cats.forEach((c, i) => {
+    const div = document.createElement('div');
+    div.className = 'cat-tag';
+    div.id = 'cattag-' + i;
+
+    const nameSpan = document.createElement('span');
+    nameSpan.className = 'cat-tag-name';
+    nameSpan.textContent = (ICONS[c]||'•') + ' ' + c;
+    nameSpan.addEventListener('click', e => { e.stopPropagation(); startRenameCategory(i); });
+
+    const delBtn = document.createElement('button');
+    delBtn.className = 'cat-tag-del';
+    delBtn.title = 'Smazat';
+    delBtn.textContent = '×';
+    delBtn.addEventListener('click', e => { e.stopPropagation(); removeCategory(i); });
+
+    div.appendChild(nameSpan);
+    div.appendChild(delBtn);
+    container.appendChild(div);
+  });
 }
 
 function startRenameCategory(idx) {
   const tag = document.getElementById('cattag-' + idx);
+  if (!tag) return;
   const oldName = CATEGORIES[sdType][idx];
-  tag.innerHTML = `
-    <input class="cat-rename-input" value="${oldName}" id="catRenameInput-${idx}"
-      onclick="event.stopPropagation()"
-      onkeydown="event.stopPropagation();if(event.key==='Enter'){event.preventDefault();commitRename(${idx});}if(event.key==='Escape')renderCatTags();">
-    <button class="cat-add-btn" onmousedown="event.preventDefault();event.stopPropagation();commitRename(${idx})">✓</button>
-    <button class="cat-tag-del" onmousedown="event.preventDefault();event.stopPropagation();renderCatTags()">✕</button>`;
-  const inp = document.getElementById('catRenameInput-' + idx);
-  inp.focus(); inp.select();
-}
 
-function commitRename(idx) {
-  const inp = document.getElementById('catRenameInput-' + idx);
-  if (!inp) return;
-  const newName = inp.value.trim();
-  const oldName = CATEGORIES[sdType][idx];
-  if (!newName || newName === oldName) { renderCatTags(); return; }
-  if (CATEGORIES[sdType].some((c,i)=>c===newName && i!==idx)) { inp.select(); return; }
-  transactions.forEach(t => { if (t.type === sdType && t.cat === oldName) t.cat = newName; });
-  CATEGORIES[sdType][idx] = newName;
-  if (ICONS[oldName]) { ICONS[newName] = ICONS[oldName]; }
-  renderCatTags();
-  updateCatSelect();
-  updateLcCatSelect();
-  saveCategories();
-  render();
+  // Clear and rebuild in place — no innerHTML replacement
+  while (tag.firstChild) tag.removeChild(tag.firstChild);
+
+  const inp = document.createElement('input');
+  inp.className = 'cat-rename-input';
+  inp.value = oldName;
+  inp.addEventListener('click', e => e.stopPropagation());
+  inp.addEventListener('keydown', e => {
+    e.stopPropagation();
+    if (e.key === 'Enter') { e.preventDefault(); commitRename(idx); }
+    if (e.key === 'Escape') renderCatTags();
+  });
+
+  const okBtn = document.createElement('button');
+  okBtn.className = 'cat-add-btn';
+  okBtn.textContent = '✓';
+  okBtn.addEventListener('mousedown', e => { e.preventDefault(); e.stopPropagation(); commitRename(idx); });
+
+  const cancelBtn = document.createElement('button');
+  cancelBtn.className = 'cat-tag-del';
+  cancelBtn.textContent = '✕';
+  cancelBtn.addEventListener('mousedown', e => { e.preventDefault(); e.stopPropagation(); renderCatTags(); });
+
 }
 
 function addCategory() {
@@ -1091,10 +1108,10 @@ function renderTxList() {
 }
 
 async function saveTxCat(id, newCat) {
-  const tx = transactions.find(t=>t.id===id);
-  if (!tx || tx.cat === newCat) { renderTxList(); return; }
+  const tx = transactions.find(t => t.id === Number(id));
+  if (!tx) return;
+  if (tx.cat === newCat) return;
   tx.cat = newCat;
-  renderTxList();
   render();
   // persist to cloud
   try {
