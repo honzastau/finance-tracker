@@ -384,21 +384,16 @@ header { background:var(--surface); border-bottom:1px solid var(--border); paddi
     </div>
 
     <div class="card" style="margin-top:16px">
-      <div class="card-header" style="cursor:pointer" onclick="toggleTxPanel()">
+      <div class="card-header">
         <span class="card-title">Transakce</span>
-        <div style="display:flex;align-items:center;gap:10px;">
-          <div class="filter-row" id="txFilterRow" style="display:none" onclick="event.stopPropagation()">
-            <button class="ftab active" onclick="setFilter('all',this)">Vše</button>
-            <button class="ftab" onclick="setFilter('income',this)">Příjmy</button>
-            <button class="ftab" onclick="setFilter('expense',this)">Výdaje</button>
-            <button class="ftab" onclick="setFilter('savings',this)">Úspory</button>
-          </div>
-          <span id="txPanelChev" style="transform:rotate(180deg);display:inline-block;transition:transform .2s;color:var(--muted);font-size:12px;">▲</span>
+        <div class="filter-row">
+          <button class="ftab active" onclick="setFilter('all',this)">Vše</button>
+          <button class="ftab" onclick="setFilter('income',this)">Příjmy</button>
+          <button class="ftab" onclick="setFilter('expense',this)">Výdaje</button>
+          <button class="ftab" onclick="setFilter('savings',this)">Úspory</button>
         </div>
       </div>
-      <div id="txPanelBody" style="display:none">
-        <div id="txList"></div>
-      </div>
+      <div id="txList"></div>
     </div>
 
   </div>
@@ -1063,14 +1058,6 @@ function renderChart() {
 }
 
 // ── TX LIST ──────────────────────────────────────────────
-let _txPanelOpen = false;
-
-function toggleTxPanel() {
-  _txPanelOpen = !_txPanelOpen;
-  document.getElementById('txPanelBody').style.display = _txPanelOpen ? 'block' : 'none';
-  document.getElementById('txFilterRow').style.display = _txPanelOpen ? 'flex' : 'none';
-  document.getElementById('txPanelChev').style.transform = _txPanelOpen ? 'rotate(0deg)' : 'rotate(180deg)';
-}
 
 function renderTxList() {
   const txs      = getFilteredTxs();
@@ -1122,10 +1109,11 @@ async function saveTxCat(id, newCat) {
   tx.cat = newCat;
   render();
   try {
+    await apiDelete(tx.id);
     const res = await fetch(API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({ action: 'saveAll', txs: transactions })
+      body: JSON.stringify({ action: 'add', tx })
     });
     const data = await res.json();
     if (!data.ok) throw new Error(data.error);
