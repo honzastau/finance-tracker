@@ -81,8 +81,8 @@ header { background:var(--surface); border-bottom:1px solid var(--border); paddi
 .layout { max-width:1100px; margin:0 auto; padding:22px 28px; }
 .main-col { display:flex; flex-direction:column; gap:16px; }
 .donuts-row { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
-.donut-card .donut-section { flex-direction:column; align-items:center; }
-.donut-card .donut-wrap { margin-bottom:8px; }
+.donut-card .donut-section { flex-direction:column; align-items:center; padding:12px 16px 16px; }
+.donut-card .donut-wrap { margin:0 auto 8px; }
 
 /* ── CARDS ── */
 .card { background:var(--surface); border:1px solid var(--border); }
@@ -102,10 +102,10 @@ header { background:var(--surface); border-bottom:1px solid var(--border); paddi
 
 /* ── BAR CHART ── */
 .chart-wrap { padding:16px 18px 14px; }
-.chart-bars { display:flex; align-items:stretch; gap:0; }
-.yax { position:relative; width:42px; flex-shrink:0; height:120px; }
-.yax-lbl { position:absolute; right:6px; font-size:9px; color:var(--muted); font-family:"Plus Jakarta Sans",sans-serif; white-space:nowrap; }
-.bars-area { display:flex; align-items:flex-end; gap:3px; flex:1; height:120px; padding-bottom:20px; box-sizing:border-box; }
+.chart-bars { overflow:visible; }
+
+
+
 .bar-col { flex:1; display:flex; flex-direction:column; align-items:center; gap:5px; height:100%; transition:opacity 0.3s; }
 .bar-col.dim { opacity:0.18; }
 .bar-pair { display:flex; gap:2px; align-items:flex-end; flex:1; justify-content:center; }
@@ -151,10 +151,10 @@ header { background:var(--surface); border-bottom:1px solid var(--border); paddi
 
 /* ── DONUT ── */
 .donut-section { padding:16px 18px; }
-.donut-wrap { position:relative; width:220px; height:220px; margin:0 auto 16px; }
-.donut-wrap svg { transform:rotate(-90deg); }
+.donut-wrap { position:relative; width:180px; height:180px; margin:0 auto 16px; }
+.donut-wrap svg { display:block; transform:rotate(-90deg); }
 .donut-center { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; }
-.donut-center-val { font-family:'Plus Jakarta Sans',sans-serif; font-size:19px; font-weight:700; line-height:1; text-align:center; }
+.donut-center-val { font-family:'Plus Jakarta Sans',sans-serif; font-size:17px; font-weight:700; line-height:1; text-align:center; }
 .donut-legend { display:flex; flex-direction:column; gap:7px; }
 .dl-row { display:flex; align-items:center; gap:7px; }
 .dl-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
@@ -943,40 +943,64 @@ function renderChart() {
   });
 
   const max = Math.max(...data.flatMap(d=>[d.income,d.expense,d.savings]),1);
-  // nice round Y axis top — round up to nearest 10 000
-  const topVal = Math.ceil(max / 10000) * 10000;
-  const tickCount = topVal / 10000;
-  const ticks = Array.from({length: tickCount+1}, (_,i) => i * 10000);
-
-  const BAR_H = 100; // px height of bar area
+  const topVal = Math.ceil(max / 10000) * 10000 || 10000;
+  const tickCount = Math.min(topVal / 10000, 6);
+  const tickStep = topVal / tickCount;
+  const ticks = Array.from({length: tickCount+1}, (_,i) => i * tickStep);
   const fmt10k = v => v===0 ? '0' : (v/1000)+'k';
 
-  // Build Y axis labels
-  const yAxisHTML = ticks.slice().reverse().map((v,i,arr) => {
-    const pct = 100 - (v/topVal)*100;
-    return `<div class="yax-lbl" style="top:calc(${pct}% - 7px)">${fmt10k(v)}</div>`;
+  const chartEl = document.getElementById('chart');
+  const W = chartEl.parentElement.clientWidth - 36;
+  const BAR_AREA_H = 100;
+  const PAD = { top:8, right:8, bottom:22, left:44 };
+  const innerW = W - PAD.left - PAD.right;
+  const H = BAR_AREA_H + PAD.top + PAD.bottom;
+
+  // SVG Y axis grid + labels
+  const gridLines = ticks.map(v => {
+    const y = PAD.top + BAR_AREA_H - (v/topVal)*BAR_AREA_H;
+    return `<line x1="${PAD.left}" y1="${y.toFixed(1)}" x2="${PAD.left+innerW}" y2="${y.toFixed(1)}" stroke="var(--border)" stroke-width="1"/>`;
   }).join('');
 
-  const barsHTML = data.map(d => {
-    const ih = Math.max(2,(d.income /topVal)*BAR_H);
-    const eh = Math.max(2,(d.expense/topVal)*BAR_H);
-    const sh = Math.max(2,(d.savings/topVal)*BAR_H);
-    return `<div class="bar-col ${d.active?'':'dim'}">
-      <div class="bar-pair">
-        <div class="bar i" style="height:${ih}px" data-tip="+${fmtShort(d.income)}"></div>
-        <div class="bar e" style="height:${eh}px" data-tip="−${fmtShort(d.expense)}"></div>
-        <div class="bar s" style="height:${sh}px" data-tip="úspory: ${fmtShort(d.savings)}"></div>
-      </div>
-      <div class="bar-lbl ${d.active&&!isYear?'hl':''}">${d.label}</div>
-    </div>`;
+  const yLabels = ticks.map(v => {
+    const y = PAD.top + BAR_AREA_H - (v/topVal)*BAR_AREA_H;
+    return `<text x="${(PAD.left-6).toFixed(1)}" y="${(y+3.5).toFixed(1)}" text-anchor="end" fill="var(--muted)" font-size="9" font-family="Plus Jakarta Sans,sans-serif">${fmt10k(v)}</text>`;
   }).join('');
 
-  document.getElementById('chart').innerHTML =
-    `<div class="yax">${yAxisHTML}</div><div class="bars-area" style="--bar-h:${BAR_H}px">${barsHTML}</div>`;
+  // Bar columns inside SVG
+  const colW = innerW / 12;
+  const barW = 5;
+  const gap = 2;
+  const groupW = 3 * barW + 2 * gap;
+
+  const bars = data.map((d, mi) => {
+    const cx = PAD.left + mi * colW + colW / 2;
+    const bx = cx - groupW / 2;
+    const ih = Math.max(1, (d.income /topVal)*BAR_AREA_H);
+    const eh = Math.max(1, (d.expense/topVal)*BAR_AREA_H);
+    const sh = Math.max(1, (d.savings/topVal)*BAR_AREA_H);
+    const baseY = PAD.top + BAR_AREA_H;
+    const opacity = d.active ? 1 : 0.18;
+    const lblColor = d.active && !isYear ? 'var(--accent)' : 'var(--muted)';
+    const lblWeight = d.active && !isYear ? '700' : '400';
+    return `
+      <g opacity="${opacity}">
+        <rect x="${bx.toFixed(1)}" y="${(baseY-ih).toFixed(1)}" width="${barW}" height="${ih.toFixed(1)}" fill="var(--green-bar)">
+          <title>+${fmtShort(d.income)}</title></rect>
+        <rect x="${(bx+barW+gap).toFixed(1)}" y="${(baseY-eh).toFixed(1)}" width="${barW}" height="${eh.toFixed(1)}" fill="var(--red-bar)">
+          <title>−${fmtShort(d.expense)}</title></rect>
+        <rect x="${(bx+2*(barW+gap)).toFixed(1)}" y="${(baseY-sh).toFixed(1)}" width="${barW}" height="${sh.toFixed(1)}" fill="var(--blue-bar)">
+          <title>úspory: ${fmtShort(d.savings)}</title></rect>
+        <text x="${cx.toFixed(1)}" y="${(H-6).toFixed(1)}" text-anchor="middle" fill="${lblColor}" font-size="8" font-weight="${lblWeight}" font-family="Bricolage Grotesque,sans-serif">${d.label}</text>
+      </g>`;
+  }).join('');
+
+  chartEl.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="display:block;overflow:visible">
+    ${gridLines}${yLabels}${bars}
+  </svg>`;
 }
 
 // ── TX LIST ──────────────────────────────────────────────
-const _openGroups = new Set();
 let _txPanelOpen = false;
 
 function toggleTxPanel() {
@@ -986,55 +1010,32 @@ function toggleTxPanel() {
   document.getElementById('txPanelChev').style.transform = _txPanelOpen ? 'rotate(0deg)' : 'rotate(180deg)';
 }
 
-function toggleGroup(key) {
-  if (_openGroups.has(key)) { _openGroups.delete(key); } else { _openGroups.add(key); }
-  renderTxList();
-}
-
 function renderTxList() {
   const txs      = getFilteredTxs();
-  const filtered = currentFilter==='all' ? txs : txs.filter(t=>t.type===currentFilter);
-  const el       = document.getElementById('txList');
+  const filtered = (currentFilter==='all' ? txs : txs.filter(t=>t.type===currentFilter))
+    .slice().sort((a,b) => new Date(b.date) - new Date(a.date) || b.id - a.id);
+  const el = document.getElementById('txList');
 
   if (!filtered.length) {
     el.innerHTML='<div class="empty-tx">Žádné transakce v tomto období</div>';
     return;
   }
 
-  const groups = {};
-  filtered.forEach(t => {
-    const key = new Date(t.date).toLocaleDateString('cs-CZ',{day:'numeric',month:'long'});
-    if (!groups[key]) groups[key]={date:t.date,items:[]};
-    groups[key].items.push(t);
-  });
+  const sign = t => t.type==='income'?'+' : t.type==='savings'?'⬡' : '−';
+  const fmtDate = d => new Date(d).toLocaleDateString('cs-CZ',{day:'numeric',month:'short'});
 
-  const keys = Object.keys(groups).sort((a,b)=>new Date(groups[b].date)-new Date(groups[a].date));
-  const sign  = t => t.type==='income'?'+' : t.type==='savings'?'⬡' : '−';
-
-  el.innerHTML = keys.map(key => {
-    const items = groups[key].items.sort((a,b)=>b.id-a.id);
-    const open  = _openGroups.has(key);
-    return `<div>
-      <div class="tx-date-row" onclick="toggleGroup('${key}')">
-        <span>${key}</span>
-        <span class="tx-date-chev" style="transform:rotate(${open?'0':'180'}deg)">▲</span>
+  el.innerHTML = filtered.map(t => `
+    <div class="tx-row">
+      <div class="tx-icon">${ICONS[t.cat]||'•'}</div>
+      <div style="flex:1;min-width:0">
+        <div class="tx-desc">${t.desc}</div>
+        <div class="tx-cat">${t.cat} <span style="color:var(--muted);font-size:10px;">· ${fmtDate(t.date)}</span></div>
       </div>
-      <div class="tx-group-body" style="display:${open?'block':'none'}">
-        ${items.map(t=>`
-          <div class="tx-row">
-            <div class="tx-icon">${ICONS[t.cat]||'•'}</div>
-            <div>
-              <div class="tx-desc">${t.desc}</div>
-              <div class="tx-cat">${t.cat}</div>
-            </div>
-            <div class="tx-right">
-              <div class="tx-amount ${t.type}">${sign(t)}${t.amount.toLocaleString('cs-CZ')} Kč</div>
-              <button class="tx-del" onclick="deleteTransaction(${t.id})">×</button>
-            </div>
-          </div>`).join('')}
+      <div class="tx-right">
+        <div class="tx-amount ${t.type}">${sign(t)}${t.amount.toLocaleString('cs-CZ')} Kč</div>
+        <button class="tx-del" onclick="deleteTransaction(${t.id})">×</button>
       </div>
-    </div>`;
-  }).join('');
+    </div>`).join('');
 }
 
 // ── INIT ─────────────────────────────────────────────────
