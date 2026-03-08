@@ -610,17 +610,33 @@ function removeCategory(idx) {
   saveCategories();
 }
 
-function saveCategories() {
-  localStorage.setItem('ft_cats', JSON.stringify(CATEGORIES));
+async function saveCategories() {
+  try {
+    await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ action: 'saveCategories', cats: CATEGORIES })
+    });
+  } catch(e) {
+    console.warn('saveCategories failed:', e);
+  }
 }
 
-function loadCategories() {
-  const saved = localStorage.getItem('ft_cats');
-  if (saved) {
-    const c = JSON.parse(saved);
-    CATEGORIES.income  = c.income  || CATEGORIES.income;
-    CATEGORIES.expense = c.expense || CATEGORIES.expense;
-    CATEGORIES.savings = c.savings || CATEGORIES.savings;
+async function loadCategories() {
+  try {
+    const res = await fetch(API_URL + '?action=getCategories');
+    const data = await res.json();
+    if (data.ok && data.data) {
+      const c = data.data;
+      CATEGORIES.income  = c.income  || CATEGORIES.income;
+      CATEGORIES.expense = c.expense || CATEGORIES.expense;
+      CATEGORIES.savings = c.savings || CATEGORIES.savings;
+    } else {
+      // First run — push defaults to cloud
+      await saveCategories();
+    }
+  } catch(e) {
+    console.warn('loadCategories failed:', e);
   }
 }
 
@@ -783,15 +799,14 @@ function renderTxList() {
 
 // ── INIT ─────────────────────────────────────────────────
 async function init() {
-  loadCategories();
-  updateCatSelect();
   document.getElementById('dateInput').value = new Date().toISOString().split('T')[0];
   buildMonthPills();
   setLoading(true);
   document.getElementById('txList').innerHTML = '<div class="empty-tx">Načítám data…</div>';
   try {
-    transactions = await apiGet();
-    // if sheet is empty, seed with sample data and upload
+    // Load categories and transactions in parallel
+    const [, txs] = await Promise.all([loadCategories(), apiGet()]);
+    transactions = txs;
     if (transactions.length === 0) {
       await seedToCloud();
     }
@@ -801,6 +816,7 @@ async function init() {
   } finally {
     setLoading(false);
   }
+  updateCatSelect();
   render();
 }
 
