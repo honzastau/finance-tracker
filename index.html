@@ -624,8 +624,8 @@ function renderCatTags() {
   const cats = CATEGORIES[sdType];
   document.getElementById('catTags').innerHTML = cats.map((c,i) =>
     `<div class="cat-tag" id="cattag-${i}">
-      <span class="cat-tag-name" onclick="startRenameCategory(${i})">${ICONS[c]||'•'} ${c}</span>
-      <button class="cat-tag-del" onclick="removeCategory(${i})" title="Smazat">×</button>
+      <span class="cat-tag-name" onclick="event.stopPropagation();startRenameCategory(${i})">${ICONS[c]||'•'} ${c}</span>
+      <button class="cat-tag-del" onclick="event.stopPropagation();removeCategory(${i})" title="Smazat">×</button>
     </div>`
   ).join('');
 }
@@ -635,9 +635,10 @@ function startRenameCategory(idx) {
   const oldName = CATEGORIES[sdType][idx];
   tag.innerHTML = `
     <input class="cat-rename-input" value="${oldName}" id="catRenameInput-${idx}"
-      onkeydown="if(event.key==='Enter'){event.preventDefault();commitRename(${idx});}if(event.key==='Escape')renderCatTags();">
-    <button class="cat-add-btn" onmousedown="event.preventDefault();commitRename(${idx})">✓</button>
-    <button class="cat-tag-del" onmousedown="event.preventDefault();renderCatTags()">✕</button>`;
+      onclick="event.stopPropagation()"
+      onkeydown="event.stopPropagation();if(event.key==='Enter'){event.preventDefault();commitRename(${idx});}if(event.key==='Escape')renderCatTags();">
+    <button class="cat-add-btn" onmousedown="event.preventDefault();event.stopPropagation();commitRename(${idx})">✓</button>
+    <button class="cat-tag-del" onmousedown="event.preventDefault();event.stopPropagation();renderCatTags()">✕</button>`;
   const inp = document.getElementById('catRenameInput-' + idx);
   inp.focus(); inp.select();
 }
