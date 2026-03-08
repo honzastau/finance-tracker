@@ -1106,7 +1106,7 @@ function renderTxList() {
       <div style="flex:1;min-width:0">
         <div class="tx-desc">${t.desc}</div>
         <div class="tx-cat">
-          <select class="tx-cat-select" data-txid="${t.id}">${opts}</select>
+          <select class="tx-cat-select" onchange="saveTxCat(${t.id}, this.value)">${opts}</select>
           <span style="color:var(--muted);font-size:10px;"> · ${fmtDate(t.date)}</span>
         </div>
       </div>
@@ -1116,22 +1116,15 @@ function renderTxList() {
       </div>
     </div>`;
   }).join('');
-
-  // attach change listeners directly to each select
-  el.querySelectorAll('.tx-cat-select').forEach(sel => {
-    sel.addEventListener('change', function() {
-      saveTxCat(Number(this.dataset.txid), this.value);
-    });
-  });
 }
 
 async function saveTxCat(id, newCat) {
-  const tx = transactions.find(t => t.id === Number(id));
-  if (!tx) return;
+  console.log('saveTxCat', id, newCat);
+  const tx = transactions.find(t => t.id === id);
+  if (!tx) { console.log('tx not found, id:', id, 'type:', typeof id); return; }
   if (tx.cat === newCat) return;
   const oldCat = tx.cat;
   tx.cat = newCat;
-  render();
   setLoading(true);
   try {
     const res = await fetch(API_URL, {
@@ -1141,10 +1134,11 @@ async function saveTxCat(id, newCat) {
     });
     const data = await res.json();
     if (!data.ok) throw new Error(data.error);
+    console.log('saveTxCat OK');
+    render();
   } catch(e) {
     console.error('saveTxCat failed:', e);
     tx.cat = oldCat;
-    render();
   } finally {
     setLoading(false);
   }
