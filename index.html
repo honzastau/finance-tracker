@@ -670,6 +670,30 @@ function startRenameCategory(idx) {
   cancelBtn.textContent = '✕';
   cancelBtn.addEventListener('mousedown', e => { e.preventDefault(); e.stopPropagation(); renderCatTags(); });
 
+  tag.appendChild(inp);
+  tag.appendChild(okBtn);
+  tag.appendChild(cancelBtn);
+  inp.focus();
+  inp.select();
+}
+
+function commitRename(idx) {
+  const tag = document.getElementById('cattag-' + idx);
+  if (!tag) return;
+  const inp = tag.querySelector('input');
+  if (!inp) return;
+  const newName = inp.value.trim();
+  const oldName = CATEGORIES[sdType][idx];
+  if (!newName || newName === oldName) { renderCatTags(); return; }
+  if (CATEGORIES[sdType].some((c, i) => c === newName && i !== idx)) { inp.select(); return; }
+  transactions.forEach(t => { if (t.type === sdType && t.cat === oldName) t.cat = newName; });
+  CATEGORIES[sdType][idx] = newName;
+  if (ICONS[oldName]) ICONS[newName] = ICONS[oldName];
+  renderCatTags();
+  updateCatSelect();
+  updateLcCatSelect();
+  saveCategories();
+  render();
 }
 
 function addCategory() {
@@ -1109,12 +1133,7 @@ async function saveTxCat(id, newCat) {
   tx.cat = newCat;
   render();
   try {
-    await apiDelete(tx.id);
-    const res = await fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({ action: 'add', tx })
-    });
+    const res = await fetch(API_URL + '?action=updateCat&id=' + encodeURIComponent(id) + '&cat=' + encodeURIComponent(newCat));
     const data = await res.json();
     if (!data.ok) throw new Error(data.error);
   } catch(e) {
