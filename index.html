@@ -401,7 +401,7 @@ async function apiGet() {
     type:   String(r.type),
     desc:   String(r.desc),
     amount: Number(r.amount),
-    cat:    String(r.cat),
+    cat:    String(r.cat ?? r.category ?? r.kat ?? r.kategorie ?? ''),
     date:   String(r.date),
   }));
 }
