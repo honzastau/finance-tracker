@@ -1132,14 +1132,21 @@ async function saveTxCat(id, newCat) {
   const oldCat = tx.cat;
   tx.cat = newCat;
   render();
+  setLoading(true);
   try {
-    const res = await fetch(API_URL + '?action=updateCat&id=' + encodeURIComponent(id) + '&cat=' + encodeURIComponent(newCat));
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ action: 'updateCat', id: tx.id, cat: newCat })
+    });
     const data = await res.json();
     if (!data.ok) throw new Error(data.error);
   } catch(e) {
     console.error('saveTxCat failed:', e);
     tx.cat = oldCat;
     render();
+  } finally {
+    setLoading(false);
   }
 }
 
