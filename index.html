@@ -1106,7 +1106,7 @@ function renderTxList() {
       <div style="flex:1;min-width:0">
         <div class="tx-desc">${t.desc}</div>
         <div class="tx-cat">
-          <select class="tx-cat-select" data-id="${t.id}">${opts}</select>
+          <select class="tx-cat-select" data-id="${t.id}" onchange="console.log('SELECT CHANGED',this.value);saveTxCat(this.dataset.id, this.value)">${opts}</select>
           <span style="color:var(--muted);font-size:10px;"> · ${fmtDate(t.date)}</span>
         </div>
       </div>
