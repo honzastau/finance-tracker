@@ -78,7 +78,11 @@ header { background:var(--surface); border-bottom:1px solid var(--border); paddi
 .btn-submit:hover { opacity:0.82; }
 
 /* ── LAYOUT ── */
-.layout { display:grid; grid-template-columns:1fr 240px; max-width:1220px; margin:0 auto; padding:22px 28px; gap:18px; align-items:start; }
+.layout { max-width:1100px; margin:0 auto; padding:22px 28px; }
+.main-col { display:flex; flex-direction:column; gap:16px; }
+.donuts-row { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+.donut-card .donut-section { flex-direction:column; align-items:center; }
+.donut-card .donut-wrap { margin-bottom:8px; }
 
 /* ── CARDS ── */
 .card { background:var(--surface); border:1px solid var(--border); }
@@ -98,10 +102,6 @@ header { background:var(--surface); border-bottom:1px solid var(--border); paddi
 
 /* ── BAR CHART ── */
 .chart-wrap { padding:16px 18px 14px; }
-.chart-area { display:flex; gap:0; }
-.chart-yaxis { display:flex; flex-direction:column; justify-content:space-between; padding-bottom:18px; width:44px; flex-shrink:0; }
-.chart-ylabel { font-size:9px; color:var(--muted); text-align:right; line-height:1; }
-.chart-bars-wrap { flex:1; }
 .chart-bars { display:flex; align-items:flex-end; gap:3px; height:100px; }
 .bar-col { flex:1; display:flex; flex-direction:column; align-items:center; gap:5px; height:100%; transition:opacity 0.3s; }
 .bar-col.dim { opacity:0.18; }
@@ -144,11 +144,11 @@ header { background:var(--surface); border-bottom:1px solid var(--border); paddi
 .empty-tx { padding:32px 18px; text-align:center; color:var(--muted); font-style:italic; font-size:12px; }
 
 /* ── RIGHT COL ── */
-.right-col { display:flex; flex-direction:column; gap:16px; }
+
 
 /* ── DONUT ── */
 .donut-section { padding:16px 18px; }
-.donut-wrap { position:relative; width:200px; height:200px; margin:0 auto 16px; }
+.donut-wrap { position:relative; width:220px; height:220px; margin:0 auto 16px; }
 .donut-wrap svg { transform:rotate(-90deg); }
 .donut-center { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; }
 .donut-center-val { font-family:'Plus Jakarta Sans',sans-serif; font-size:19px; font-weight:700; line-height:1; text-align:center; }
@@ -199,7 +199,7 @@ header { background:var(--surface); border-bottom:1px solid var(--border); paddi
 .lc-type-btn.active.savings { background:var(--blue-bg); color:var(--blue); }
 @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
 @media(max-width:900px){
-  .layout{grid-template-columns:1fr;padding:16px;}
+  .layout{padding:16px;} .donuts-row{grid-template-columns:1fr;}
   .stat-strip{grid-template-columns:1fr 1fr;}
   .stat-cell:nth-child(3),.stat-cell:nth-child(4){border-top:1px solid var(--border);}
   .stat-cell:nth-child(2),.stat-cell:nth-child(4){border-right:none;}
@@ -300,17 +300,52 @@ header { background:var(--surface); border-bottom:1px solid var(--border); paddi
       </div>
     </div>
 
+    <!-- DONUTS ROW -->
+    <div class="donuts-row">
+      <div class="card donut-card">
+        <div class="card-header"><span class="card-title">Příjmy</span></div>
+        <div class="donut-section">
+          <div class="donut-wrap">
+            <svg width="180" height="180" viewBox="0 0 220 220" id="donutIncome"></svg>
+            <div class="donut-center">
+              <div class="donut-center-val" id="donutIncomeVal" style="color:var(--green)">—</div>
+            </div>
+          </div>
+          <div class="donut-legend" id="legendIncome"></div>
+        </div>
+      </div>
+      <div class="card donut-card">
+        <div class="card-header"><span class="card-title">Výdaje</span></div>
+        <div class="donut-section">
+          <div class="donut-wrap">
+            <svg width="180" height="180" viewBox="0 0 220 220" id="donutExpense"></svg>
+            <div class="donut-center">
+              <div class="donut-center-val" id="donutExpenseVal" style="color:var(--red)">—</div>
+            </div>
+          </div>
+          <div class="donut-legend" id="legendExpense"></div>
+        </div>
+      </div>
+      <div class="card donut-card">
+        <div class="card-header"><span class="card-title">Úspory</span></div>
+        <div class="donut-section">
+          <div class="donut-wrap">
+            <svg width="180" height="180" viewBox="0 0 220 220" id="donutSavings"></svg>
+            <div class="donut-center">
+              <div class="donut-center-val" id="donutSavingsVal" style="color:var(--blue)">—</div>
+            </div>
+          </div>
+          <div class="donut-legend" id="legendSavings"></div>
+        </div>
+      </div>
+    </div>
+
     <div class="card">
       <div class="card-header">
         <span class="card-title" id="chartTitle">Přehled roku</span>
       </div>
       <div class="chart-wrap">
-        <div class="chart-area">
-          <div class="chart-yaxis" id="chartYAxis"></div>
-          <div class="chart-bars-wrap">
-            <div class="chart-bars" id="chart"></div>
-          </div>
-        </div>
+        <div class="chart-bars" id="chart"></div>
         <div class="chart-legend">
           <div class="legend-item"><div class="legend-dot" style="background:var(--green-bar)"></div>Příjmy</div>
           <div class="legend-item"><div class="legend-dot" style="background:var(--red-bar)"></div>Výdaje</div>
@@ -338,64 +373,18 @@ header { background:var(--surface); border-bottom:1px solid var(--border); paddi
     </div>
 
     <div class="card" style="margin-top:16px">
-      <div class="card-header" onclick="toggleTxPanel()" style="cursor:pointer;user-select:none;">
+      <div class="card-header">
         <span class="card-title">Transakce</span>
-        <div style="display:flex;align-items:center;gap:10px;">
-          <div class="filter-row" id="txFilters" style="display:none;" onclick="event.stopPropagation()">
-            <button class="ftab active" onclick="setFilter('all',this)">Vše</button>
-            <button class="ftab" onclick="setFilter('income',this)">Příjmy</button>
-            <button class="ftab" onclick="setFilter('expense',this)">Výdaje</button>
-            <button class="ftab" onclick="setFilter('savings',this)">Úspory</button>
-          </div>
-          <span id="txPanelChev" style="font-size:9px;color:var(--muted);transform:rotate(180deg);display:inline-block;transition:transform 0.2s;">▲</span>
+        <div class="filter-row">
+          <button class="ftab active" onclick="setFilter('all',this)">Vše</button>
+          <button class="ftab" onclick="setFilter('income',this)">Příjmy</button>
+          <button class="ftab" onclick="setFilter('expense',this)">Výdaje</button>
+          <button class="ftab" onclick="setFilter('savings',this)">Úspory</button>
         </div>
       </div>
-      <div id="txPanel" style="display:none;">
-        <div id="txList"></div>
-      </div>
+      <div id="txList"></div>
     </div>
 
-  </div>
-
-  <div class="right-col">
-    <div class="card">
-      <div class="card-header"><span class="card-title">Příjmy</span></div>
-      <div class="donut-section">
-        <div class="donut-wrap">
-          <svg width="200" height="200" viewBox="0 0 200 200" id="donutIncome"></svg>
-          <div class="donut-center">
-            <div class="donut-center-val" id="donutIncomeVal" style="color:var(--green)">—</div>
-          </div>
-        </div>
-        <div class="donut-legend" id="legendIncome"></div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-header"><span class="card-title">Výdaje</span></div>
-      <div class="donut-section">
-        <div class="donut-wrap">
-          <svg width="200" height="200" viewBox="0 0 200 200" id="donutExpense"></svg>
-          <div class="donut-center">
-            <div class="donut-center-val" id="donutExpenseVal" style="color:var(--red)">—</div>
-          </div>
-        </div>
-        <div class="donut-legend" id="legendExpense"></div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-header"><span class="card-title">Úspory</span></div>
-      <div class="donut-section">
-        <div class="donut-wrap">
-          <svg width="200" height="200" viewBox="0 0 200 200" id="donutSavings"></svg>
-          <div class="donut-center">
-            <div class="donut-center-val" id="donutSavingsVal" style="color:var(--blue)">—</div>
-          </div>
-        </div>
-        <div class="donut-legend" id="legendSavings"></div>
-      </div>
-    </div>
   </div>
 </div>
 
@@ -417,23 +406,9 @@ const ICONS = {
   'Bitcoin':'₿','DIP':'🧓','Trading212':'📊'
 };
 
-// Gradient shades per type (light→dark of one hue)
-function getGradientColors(type, n) {
-  const palettes = {
-    income:  [[220,240,210],[72,124,63]],   // light green → dark green
-    expense: [[253,224,214],[160,60,32]],   // light red   → dark red
-    savings: [[210,228,248],[42,90,148]],   // light blue  → dark blue
-  };
-  const [lo, hi] = palettes[type] || palettes.expense;
-  if (n === 1) return [`rgb(${hi.join(',')})`];
-  return Array.from({length:n},(_,i)=>{
-    const t = n===1?1:i/(n-1);
-    const r = Math.round(lo[0]+(hi[0]-lo[0])*t);
-    const g = Math.round(lo[1]+(hi[1]-lo[1])*t);
-    const b = Math.round(lo[2]+(hi[2]-lo[2])*t);
-    return `rgb(${r},${g},${b})`;
-  });
-}
+const EXPENSE_COLORS = ['#e07048','#c07840','#e8a838','#9b6dd6','#d45c9b','#5b9bd5','#38b8a0','#6a9fd8','#8bc34a','#72b05a'];
+const INCOME_COLORS  = ['#72b05a','#4a7c3f','#38b8a0','#5b9bd5','#c07840','#e8a838','#9b6dd6','#e07048','#6a9fd8','#d45c9b'];
+const SAVINGS_COLORS = ['#5b9bd5','#3a6fa8','#38b8a0','#6a9fd8','#72b05a','#9b6dd6','#c07840','#e8a838'];
 
 const API_URL = 'https://script.google.com/macros/s/AKfycbx_i1L-641uH9CMnk6SidRlTE3PjCbEMGZWFupqZGjZ7anPOEzw2q_U50K9vy_vsbrENg/exec';
 
@@ -601,14 +576,6 @@ function setFilter(f, el) {
   renderTxList();
 }
 
-let txPanelOpen = false;
-function toggleTxPanel() {
-  txPanelOpen = !txPanelOpen;
-  document.getElementById('txPanel').style.display   = txPanelOpen ? 'block' : 'none';
-  document.getElementById('txFilters').style.display = txPanelOpen ? 'flex'  : 'none';
-  document.getElementById('txPanelChev').style.transform = txPanelOpen ? 'rotate(0deg)' : 'rotate(180deg)';
-}
-
 // ── SETTINGS ─────────────────────────────────────────────
 let sdType = 'income';
 
@@ -749,16 +716,13 @@ function renderLineChart() {
   });
 
   const maxVal = Math.max(...vals, 1);
-  // lcTopTick defined below after yTicks — hoist it here for points
-  const _lcStep = 10000;
-  const lcTopTick = Math.ceil(maxVal / _lcStep) * _lcStep || 1;
   const color = lcType==='income'?'var(--green-bar)':lcType==='expense'?'var(--red-bar)':'var(--blue-bar)';
   const colorSolid = lcType==='income'?'#72b05a':lcType==='expense'?'#e07048':'#5b9bd5';
 
   const xStep = innerW / 11;
   const points = vals.map((v,i) => ({
     x: PAD.left + i * xStep,
-    y: PAD.top + innerH - (v/lcTopTick)*innerH,
+    y: PAD.top + innerH - (v/maxVal)*innerH,
     v
   }));
 
@@ -767,14 +731,10 @@ function renderLineChart() {
   // area fill
   const areaD = pathD + ` L${points[11].x.toFixed(1)},${(PAD.top+innerH).toFixed(1)} L${points[0].x.toFixed(1)},${(PAD.top+innerH).toFixed(1)} Z`;
 
-  // Y axis ticks — steps of 10 000
-  const lcStep = 10000;
-  const _lcTopTick2 = Math.ceil(maxVal / lcStep) * lcStep;
-  const lcTickVals = [];
-  for (let v = 0; v <= _lcTopTick2; v += lcStep) lcTickVals.push(v);
-  const yTicks = lcTickVals.map(v => ({
-    y: PAD.top + innerH - (v / lcTopTick) * innerH,
-    label: v === 0 ? '0' : (v / 1000) + 'k'
+  // Y axis ticks
+  const yTicks = [0, 0.25, 0.5, 0.75, 1].map(f => ({
+    y: PAD.top + innerH - f*innerH,
+    label: Math.round(f*maxVal).toLocaleString('cs-CZ')
   }));
 
   const gridLines = yTicks.map(t =>
@@ -858,7 +818,7 @@ function render() {
       ? (higherIsBetter ? 'color:var(--green)' : 'color:var(--red)')
       : (higherIsBetter ? 'color:var(--red)'   : 'color:var(--green)');
   };
-  const periodLabel = isYear ? String(selectedYear-1) : (() => { let pm=selectedMonth-1,py=selectedYear; if(pm<0){pm=11;py--;} return MONTHS[pm]; })();
+  const periodLabel = isYear ? String(selectedYear-1) : (() => { let pm=selectedMonth-1,py=selectedYear; if(pm<0){pm=11;py--;} return MONTHS_SHORT[pm]; })();
   const fmtSub = (cur, prev, hib) => {
     const p = pctChg(cur, prev);
     const c = pctColor(cur, prev, hib);
@@ -869,26 +829,25 @@ function render() {
 
   renderChart();
   renderLineChart();
-  renderDonut('income',  txs, income);
-  renderDonut('expense', txs, expense);
-  renderDonut('savings', txs, savings);
+  renderDonut('income',  txs, income,  INCOME_COLORS,  'var(--green)');
+  renderDonut('expense', txs, expense, EXPENSE_COLORS, 'var(--red)');
+  renderDonut('savings', txs, savings, SAVINGS_COLORS, 'var(--blue)');
   renderTxList();
 }
 
 // ── DONUT ────────────────────────────────────────────────
-function renderDonut(type, txs, total) {
-  const centerColor = type==='income'?'var(--green)':type==='expense'?'var(--red)'  :'var(--blue)';
+function renderDonut(type, txs, total, colors, centerColor) {
   const bycat = {};
   txs.filter(t=>t.type===type).forEach(t=>{ bycat[t.cat]=(bycat[t.cat]||0)+t.amount; });
-  const allSorted = Object.entries(bycat).sort((a,b)=>b[1]-a[1]);
+  const sorted = Object.entries(bycat).sort((a,b)=>b[1]-a[1]);
 
   const capType = type.charAt(0).toUpperCase()+type.slice(1);
   const svgEl  = document.getElementById('donut'+capType);
   const valEl  = document.getElementById('donut'+capType+'Val');
   const legEl  = document.getElementById('legend'+capType);
 
-  if (!allSorted.length) {
-    svgEl.innerHTML = `<circle cx="100" cy="100" r="74" fill="none" stroke="var(--surface2)" stroke-width="20"/>`;
+  if (!sorted.length) {
+    svgEl.innerHTML = `<circle cx="110" cy="110" r="80" fill="none" stroke="var(--surface2)" stroke-width="20"/>`;
     valEl.textContent = '—';
     legEl.innerHTML = '<div class="empty-donut">Žádná data</div>';
     return;
@@ -897,41 +856,28 @@ function renderDonut(type, txs, total) {
   valEl.textContent = Math.abs(total).toLocaleString('cs-CZ') + ' Kč';
   valEl.style.color = centerColor;
 
-  // Top 5 for donut, rest merged as "Ostatní"
-  const TOP = 5;
-  let donutSlices;
-  if (allSorted.length <= TOP) {
-    donutSlices = allSorted;
-  } else {
-    const top5 = allSorted.slice(0, TOP);
-    const restAmt = allSorted.slice(TOP).reduce((s,[,a])=>s+a, 0);
-    donutSlices = [...top5, ['Ostatní', restAmt]];
-  }
-
-  const gradColors = getGradientColors(type, donutSlices.length);
-
-  const cx=100, cy=100, r=74, sw=20;
+  const cx=110, cy=110, r=80, sw=20;
   const circ = 2*Math.PI*r;
   let offset=0, paths='';
 
-  donutSlices.forEach(([cat,amt],i) => {
+  sorted.forEach(([cat,amt],i) => {
     const frac = amt/total;
     const dash = frac*circ;
     const gap  = circ-dash;
-    paths += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${gradColors[i]}" stroke-width="${sw}"
+    const color = colors[i%colors.length];
+    paths += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${color}" stroke-width="${sw}"
       stroke-dasharray="${dash.toFixed(2)} ${gap.toFixed(2)}"
       stroke-dashoffset="${(-offset).toFixed(2)}"/>`;
     offset += dash;
   });
+  // inner fill to create donut hole
   paths += `<circle cx="${cx}" cy="${cy}" r="${r-sw/2-1}" fill="var(--surface)"/>`;
   svgEl.innerHTML = paths;
 
-  // Legend: show ALL categories (allSorted), colors match top5; rest gets muted dot
-  legEl.innerHTML = allSorted.map(([cat,amt],i) => {
+  legEl.innerHTML = sorted.map(([cat,amt],i) => {
     const pct = total>0 ? Math.round(amt/total*100) : 0;
-    const dotColor = i < TOP ? gradColors[i] : 'var(--border2)';
     return `<div class="dl-row">
-      <div class="dl-dot" style="background:${dotColor}"></div>
+      <div class="dl-dot" style="background:${colors[i%colors.length]}"></div>
       <div class="dl-name">${ICONS[cat]||'•'} ${cat}</div>
       <div class="dl-amt">${fmtShort(amt)}<span class="dl-pct">${pct}%</span></div>
     </div>`;
@@ -961,15 +907,6 @@ function renderChart() {
   });
 
   const max = Math.max(...data.flatMap(d=>[d.income,d.expense,d.savings]),1);
-
-  // Y-axis: steps of 10 000
-  const step = 10000;
-  const topTick = Math.ceil(max / step) * step;
-  const ticks = [];
-  for (let v = topTick; v >= 0; v -= step) ticks.push(v);
-  document.getElementById('chartYAxis').innerHTML = ticks.map(v =>
-    `<div class="chart-ylabel">${v===0?'0':(v/1000)+'k'}</div>`
-  ).join('');
 
   document.getElementById('chart').innerHTML = data.map(d => {
     const ih = Math.max(2,(d.income /max)*88);
@@ -1051,7 +988,7 @@ async function init() {
     const [, txs] = await Promise.all([loadCategories(), apiGet()]);
     transactions = txs;
     if (transactions.length === 0) {
-      await seedToCloud();
+      // no transactions yet
     }
   } catch(e) {
     showError('Nepodařilo se načíst data: ' + e.message);
@@ -1062,35 +999,6 @@ async function init() {
   updateCatSelect();
   updateLcCatSelect();
   render();
-}
-
-async function seedToCloud() {
-  const now=new Date(); let id=Date.now();
-  const e=(mo,day,type,desc,amount,cat)=>{
-    const b=new Date(now.getFullYear(),now.getMonth()+mo,1);
-    const p=n=>String(n).padStart(2,'0');
-    return {id:id++,type,desc,amount,cat,date:`${b.getFullYear()}-${p(b.getMonth()+1)}-${p(day)}`};
-  };
-  const sample=[
-    e(0,1,'income','Výplata',44000,'Mzda'),e(0,1,'expense','Nájem',14500,'Bydlení'),e(0,1,'savings','ETF S&P500',3000,'Akcie / ETF'),
-    e(0,1,'expense','Posilovna',750,'Sport'),e(0,2,'expense','MHD jízdné',550,'Doprava'),e(0,5,'expense','Netflix + Spotify',480,'Zábava'),
-    e(0,8,'income','Freelance — web',9500,'Freelance'),e(0,10,'savings','Spořicí účet',2000,'Spořicí účet'),
-    e(0,13,'expense','Nové tenisky',2800,'Oblečení'),e(0,17,'expense','Týdenní nákup',1960,'Jídlo'),e(0,22,'expense','Tankování',1800,'Doprava'),
-    e(-1,1,'income','Výplata',44000,'Mzda'),e(-1,1,'expense','Nájem',14500,'Bydlení'),e(-1,1,'savings','ETF S&P500',3000,'Akcie / ETF'),
-    e(-1,4,'expense','Supermarket',2100,'Jídlo'),e(-1,10,'income','Prodej PC',8000,'Prodej'),
-    e(-1,12,'expense','Oblečení — Zara',1650,'Oblečení'),e(-1,25,'expense','Benzin',1600,'Doprava'),
-    e(-2,1,'income','Výplata',44000,'Mzda'),e(-2,1,'expense','Nájem',14500,'Bydlení'),e(-2,1,'savings','ETF S&P500',3000,'Akcie / ETF'),
-    e(-2,8,'income','Freelance — logo',5500,'Freelance'),e(-2,22,'expense','Supermarket',2200,'Jídlo'),
-    e(-3,1,'income','Výplata',42000,'Mzda'),e(-3,1,'expense','Nájem',14500,'Bydlení'),e(-3,5,'income','Brigáda',6000,'Brigáda'),
-    e(-3,7,'expense','Dovolená záloha',8500,'Zábava'),e(-3,22,'expense','Oblečení',2100,'Oblečení'),
-    e(-4,1,'income','Výplata',42000,'Mzda'),e(-4,1,'expense','Nájem',14500,'Bydlení'),e(-4,1,'savings','ETF S&P500',2500,'Akcie / ETF'),
-    e(-4,12,'income','Freelance — app',12000,'Freelance'),e(-4,17,'expense','Kurz angličtiny',2400,'Vzdělání'),
-    e(-5,1,'income','Výplata',42000,'Mzda'),e(-5,1,'expense','Nájem',14500,'Bydlení'),e(-5,22,'income','Prodej věcí',3200,'Prodej'),
-    e(-6,1,'income','Výplata',40000,'Mzda'),e(-6,1,'expense','Nájem',14500,'Bydlení'),e(-6,10,'income','Brigáda',4500,'Brigáda'),
-  ];
-  transactions = sample;
-  // upload all at once
-  await apiSaveAll(sample);
 }
 
 init();
