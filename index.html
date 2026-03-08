@@ -102,7 +102,10 @@ header { background:var(--surface); border-bottom:1px solid var(--border); paddi
 
 /* ── BAR CHART ── */
 .chart-wrap { padding:16px 18px 14px; }
-.chart-bars { display:flex; align-items:flex-end; gap:3px; height:100px; }
+.chart-bars { display:flex; align-items:stretch; gap:0; }
+.yax { position:relative; width:42px; flex-shrink:0; height:120px; }
+.yax-lbl { position:absolute; right:6px; font-size:9px; color:var(--muted); font-family:"Plus Jakarta Sans",sans-serif; white-space:nowrap; }
+.bars-area { display:flex; align-items:flex-end; gap:3px; flex:1; height:120px; padding-bottom:20px; box-sizing:border-box; }
 .bar-col { flex:1; display:flex; flex-direction:column; align-items:center; gap:5px; height:100%; transition:opacity 0.3s; }
 .bar-col.dim { opacity:0.18; }
 .bar-pair { display:flex; gap:2px; align-items:flex-end; flex:1; justify-content:center; }
@@ -373,16 +376,21 @@ header { background:var(--surface); border-bottom:1px solid var(--border); paddi
     </div>
 
     <div class="card" style="margin-top:16px">
-      <div class="card-header">
+      <div class="card-header" style="cursor:pointer" onclick="toggleTxPanel()">
         <span class="card-title">Transakce</span>
-        <div class="filter-row">
-          <button class="ftab active" onclick="setFilter('all',this)">Vše</button>
-          <button class="ftab" onclick="setFilter('income',this)">Příjmy</button>
-          <button class="ftab" onclick="setFilter('expense',this)">Výdaje</button>
-          <button class="ftab" onclick="setFilter('savings',this)">Úspory</button>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div class="filter-row" id="txFilterRow" style="display:none" onclick="event.stopPropagation()">
+            <button class="ftab active" onclick="setFilter('all',this)">Vše</button>
+            <button class="ftab" onclick="setFilter('income',this)">Příjmy</button>
+            <button class="ftab" onclick="setFilter('expense',this)">Výdaje</button>
+            <button class="ftab" onclick="setFilter('savings',this)">Úspory</button>
+          </div>
+          <span id="txPanelChev" style="transform:rotate(180deg);display:inline-block;transition:transform .2s;color:var(--muted);font-size:12px;">▲</span>
         </div>
       </div>
-      <div id="txList"></div>
+      <div id="txPanelBody" style="display:none">
+        <div id="txList"></div>
+      </div>
     </div>
 
   </div>
@@ -716,13 +724,17 @@ function renderLineChart() {
   });
 
   const maxVal = Math.max(...vals, 1);
+  // round up to nearest 10 000 for clean ticks
+  const lcTopVal = Math.ceil(maxVal / 10000) * 10000 || 10000;
+  const lcTickCount = Math.min(lcTopVal / 10000, 6);
+  const lcStep = lcTopVal / lcTickCount;
   const color = lcType==='income'?'var(--green-bar)':lcType==='expense'?'var(--red-bar)':'var(--blue-bar)';
   const colorSolid = lcType==='income'?'#72b05a':lcType==='expense'?'#e07048':'#5b9bd5';
 
   const xStep = innerW / 11;
   const points = vals.map((v,i) => ({
     x: PAD.left + i * xStep,
-    y: PAD.top + innerH - (v/maxVal)*innerH,
+    y: PAD.top + innerH - (v/lcTopVal)*innerH,
     v
   }));
 
@@ -731,10 +743,10 @@ function renderLineChart() {
   // area fill
   const areaD = pathD + ` L${points[11].x.toFixed(1)},${(PAD.top+innerH).toFixed(1)} L${points[0].x.toFixed(1)},${(PAD.top+innerH).toFixed(1)} Z`;
 
-  // Y axis ticks
-  const yTicks = [0, 0.25, 0.5, 0.75, 1].map(f => ({
-    y: PAD.top + innerH - f*innerH,
-    label: Math.round(f*maxVal).toLocaleString('cs-CZ')
+  // Y axis ticks — round steps of 10k
+  const yTicks = Array.from({length: lcTickCount+1}, (_,i) => i * lcStep).map(v => ({
+    y: PAD.top + innerH - (v/lcTopVal)*innerH,
+    label: v===0 ? '0' : (v/1000)+'k'
   }));
 
   const gridLines = yTicks.map(t =>
@@ -818,7 +830,7 @@ function render() {
       ? (higherIsBetter ? 'color:var(--green)' : 'color:var(--red)')
       : (higherIsBetter ? 'color:var(--red)'   : 'color:var(--green)');
   };
-  const periodLabel = isYear ? String(selectedYear-1) : (() => { let pm=selectedMonth-1,py=selectedYear; if(pm<0){pm=11;py--;} return MONTHS_SHORT[pm]; })();
+  const periodLabel = isYear ? String(selectedYear-1) : (() => { let pm=selectedMonth-1,py=selectedYear; if(pm<0){pm=11;py--;} return MONTHS[pm]; })();
   const fmtSub = (cur, prev, hib) => {
     const p = pctChg(cur, prev);
     const c = pctColor(cur, prev, hib);
@@ -829,14 +841,30 @@ function render() {
 
   renderChart();
   renderLineChart();
-  renderDonut('income',  txs, income,  INCOME_COLORS,  'var(--green)');
-  renderDonut('expense', txs, expense, EXPENSE_COLORS, 'var(--red)');
-  renderDonut('savings', txs, savings, SAVINGS_COLORS, 'var(--blue)');
+  renderDonut('income',  txs, income);
+  renderDonut('expense', txs, expense);
+  renderDonut('savings', txs, savings);
   renderTxList();
 }
 
 // ── DONUT ────────────────────────────────────────────────
-function renderDonut(type, txs, total, colors, centerColor) {
+function getGradientColors(type, n) {
+  const palettes = {
+    income:  [[180,210,160],[60,120,50]],   // light green → dark green
+    expense: [[230,160,140],[180,60,40]],   // light red → dark red
+    savings: [[140,180,230],[40,90,175]],   // light blue → dark blue
+  };
+  const [lo, hi] = palettes[type] || palettes.income;
+  return Array.from({length:n}, (_,i) => {
+    const t = n===1 ? 0 : i/(n-1);
+    const r = Math.round(lo[0]+(hi[0]-lo[0])*t);
+    const g = Math.round(lo[1]+(hi[1]-lo[1])*t);
+    const b = Math.round(lo[2]+(hi[2]-lo[2])*t);
+    return `rgb(${r},${g},${b})`;
+  });
+}
+
+function renderDonut(type, txs, total) {
   const bycat = {};
   txs.filter(t=>t.type===type).forEach(t=>{ bycat[t.cat]=(bycat[t.cat]||0)+t.amount; });
   const sorted = Object.entries(bycat).sort((a,b)=>b[1]-a[1]);
@@ -845,6 +873,7 @@ function renderDonut(type, txs, total, colors, centerColor) {
   const svgEl  = document.getElementById('donut'+capType);
   const valEl  = document.getElementById('donut'+capType+'Val');
   const legEl  = document.getElementById('legend'+capType);
+  const centerColor = type==='income'?'var(--green)':type==='expense'?'var(--red)':'var(--blue)';
 
   if (!sorted.length) {
     svgEl.innerHTML = `<circle cx="110" cy="110" r="80" fill="none" stroke="var(--surface2)" stroke-width="20"/>`;
@@ -856,28 +885,36 @@ function renderDonut(type, txs, total, colors, centerColor) {
   valEl.textContent = Math.abs(total).toLocaleString('cs-CZ') + ' Kč';
   valEl.style.color = centerColor;
 
+  // Top 5 in donut, rest as "Ostatní"
+  const top5 = sorted.slice(0, 5);
+  const rest = sorted.slice(5);
+  const restSum = rest.reduce((s,[,v])=>s+v, 0);
+  const donutSlices = restSum > 0 ? [...top5, ['Ostatní', restSum]] : top5;
+  const colors = getGradientColors(type, donutSlices.length);
+
   const cx=110, cy=110, r=80, sw=20;
   const circ = 2*Math.PI*r;
   let offset=0, paths='';
 
-  sorted.forEach(([cat,amt],i) => {
+  donutSlices.forEach(([cat,amt],i) => {
     const frac = amt/total;
     const dash = frac*circ;
     const gap  = circ-dash;
-    const color = colors[i%colors.length];
-    paths += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${color}" stroke-width="${sw}"
+    paths += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${colors[i]}" stroke-width="${sw}"
       stroke-dasharray="${dash.toFixed(2)} ${gap.toFixed(2)}"
       stroke-dashoffset="${(-offset).toFixed(2)}"/>`;
     offset += dash;
   });
-  // inner fill to create donut hole
   paths += `<circle cx="${cx}" cy="${cy}" r="${r-sw/2-1}" fill="var(--surface)"/>`;
   svgEl.innerHTML = paths;
 
+  // Legend shows ALL categories, top 5 get their gradient color dot, rest get grey
+  const top5Names = new Set(top5.map(([c])=>c));
   legEl.innerHTML = sorted.map(([cat,amt],i) => {
     const pct = total>0 ? Math.round(amt/total*100) : 0;
+    const dotColor = top5Names.has(cat) ? colors[top5.findIndex(([c])=>c===cat)] : 'var(--muted)';
     return `<div class="dl-row">
-      <div class="dl-dot" style="background:${colors[i%colors.length]}"></div>
+      <div class="dl-dot" style="background:${dotColor}"></div>
       <div class="dl-name">${ICONS[cat]||'•'} ${cat}</div>
       <div class="dl-amt">${fmtShort(amt)}<span class="dl-pct">${pct}%</span></div>
     </div>`;
@@ -891,7 +928,6 @@ function renderChart() {
     ? `${selectedYear} — přehled po měsících`
     : `${selectedYear} — ${MONTHS[selectedMonth]}`;
 
-  // always all 12 months of selected year
   const data = MONTHS_SHORT.map((lbl,mi) => {
     const t = transactions.filter(x=>{
       const d=new Date(x.date);
@@ -907,11 +943,24 @@ function renderChart() {
   });
 
   const max = Math.max(...data.flatMap(d=>[d.income,d.expense,d.savings]),1);
+  // nice round Y axis top — round up to nearest 10 000
+  const topVal = Math.ceil(max / 10000) * 10000;
+  const tickCount = topVal / 10000;
+  const ticks = Array.from({length: tickCount+1}, (_,i) => i * 10000);
 
-  document.getElementById('chart').innerHTML = data.map(d => {
-    const ih = Math.max(2,(d.income /max)*88);
-    const eh = Math.max(2,(d.expense/max)*88);
-    const sh = Math.max(2,(d.savings/max)*88);
+  const BAR_H = 100; // px height of bar area
+  const fmt10k = v => v===0 ? '0' : (v/1000)+'k';
+
+  // Build Y axis labels
+  const yAxisHTML = ticks.slice().reverse().map((v,i,arr) => {
+    const pct = 100 - (v/topVal)*100;
+    return `<div class="yax-lbl" style="top:calc(${pct}% - 7px)">${fmt10k(v)}</div>`;
+  }).join('');
+
+  const barsHTML = data.map(d => {
+    const ih = Math.max(2,(d.income /topVal)*BAR_H);
+    const eh = Math.max(2,(d.expense/topVal)*BAR_H);
+    const sh = Math.max(2,(d.savings/topVal)*BAR_H);
     return `<div class="bar-col ${d.active?'':'dim'}">
       <div class="bar-pair">
         <div class="bar i" style="height:${ih}px" data-tip="+${fmtShort(d.income)}"></div>
@@ -921,10 +970,21 @@ function renderChart() {
       <div class="bar-lbl ${d.active&&!isYear?'hl':''}">${d.label}</div>
     </div>`;
   }).join('');
+
+  document.getElementById('chart').innerHTML =
+    `<div class="yax">${yAxisHTML}</div><div class="bars-area" style="--bar-h:${BAR_H}px">${barsHTML}</div>`;
 }
 
 // ── TX LIST ──────────────────────────────────────────────
 const _openGroups = new Set();
+let _txPanelOpen = false;
+
+function toggleTxPanel() {
+  _txPanelOpen = !_txPanelOpen;
+  document.getElementById('txPanelBody').style.display = _txPanelOpen ? 'block' : 'none';
+  document.getElementById('txFilterRow').style.display = _txPanelOpen ? 'flex' : 'none';
+  document.getElementById('txPanelChev').style.transform = _txPanelOpen ? 'rotate(0deg)' : 'rotate(180deg)';
+}
 
 function toggleGroup(key) {
   if (_openGroups.has(key)) { _openGroups.delete(key); } else { _openGroups.add(key); }
