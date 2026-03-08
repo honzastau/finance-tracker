@@ -1090,12 +1090,12 @@ function renderTxList() {
     const cats = CATEGORIES[t.type] || [];
     const opts = cats.map(c => `<option value="${c}"${c===t.cat?' selected':''}>${c}</option>`).join('');
     return `
-    <div class="tx-row" id="txrow-${t.id}">
+    <div class="tx-row">
       <div class="tx-icon">${ICONS[t.cat]||'•'}</div>
       <div style="flex:1;min-width:0">
         <div class="tx-desc">${t.desc}</div>
         <div class="tx-cat">
-          <select class="tx-cat-select" onchange="saveTxCat(${t.id},this.value)">${opts}</select>
+          <select class="tx-cat-select" data-txid="${t.id}">${opts}</select>
           <span style="color:var(--muted);font-size:10px;"> · ${fmtDate(t.date)}</span>
         </div>
       </div>
@@ -1105,6 +1105,13 @@ function renderTxList() {
       </div>
     </div>`;
   }).join('');
+
+  // attach change listeners directly to each select
+  el.querySelectorAll('.tx-cat-select').forEach(sel => {
+    sel.addEventListener('change', function() {
+      saveTxCat(Number(this.dataset.txid), this.value);
+    });
+  });
 }
 
 async function saveTxCat(id, newCat) {
