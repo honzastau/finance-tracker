@@ -78,7 +78,7 @@ header { background:var(--surface); border-bottom:1px solid var(--border); paddi
 .btn-submit:hover { opacity:0.82; }
 
 /* ── LAYOUT ── */
-.layout { display:grid; grid-template-columns:1fr 380px; max-width:1220px; margin:0 auto; padding:22px 28px; gap:18px; align-items:start; }
+.layout { display:grid; grid-template-columns:1fr 300px; max-width:1220px; margin:0 auto; padding:22px 28px; gap:18px; align-items:start; }
 
 /* ── CARDS ── */
 .card { background:var(--surface); border:1px solid var(--border); }
@@ -277,10 +277,12 @@ header { background:var(--surface); border-bottom:1px solid var(--border); paddi
       <div class="stat-cell">
         <div class="stat-label">Příjmy</div>
         <div class="stat-value income" id="statIncome">+0 Kč</div>
+        <div class="stat-sub" id="statIncomeSub"></div>
       </div>
       <div class="stat-cell">
         <div class="stat-label">Výdaje</div>
         <div class="stat-value expense" id="statExpense">−0 Kč</div>
+        <div class="stat-sub" id="statExpenseSub"></div>
       </div>
       <div class="stat-cell">
         <div class="stat-label">Úspory</div>
@@ -792,6 +794,42 @@ function render() {
   bEl.style.color = balance>=0 ? 'var(--green)' : 'var(--red)';
   document.getElementById('statBalanceSub').textContent = balance>=0 ? 'ušetřeno' : 'přečerpáno';
 
+  // ── % change vs previous period ──
+  const isYear = selectedMonth === -1;
+  let prevIncome=0, prevExpense=0, prevSavings=0;
+  if (isYear) {
+    const prev = transactions.filter(t => new Date(t.date).getFullYear() === selectedYear-1);
+    prevIncome  = prev.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
+    prevExpense = prev.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
+    prevSavings = prev.filter(t=>t.type==='savings').reduce((s,t)=>s+t.amount,0);
+  } else {
+    let pm = selectedMonth - 1, py = selectedYear;
+    if (pm < 0) { pm = 11; py--; }
+    const prev = transactions.filter(t => { const d=new Date(t.date); return d.getFullYear()===py && d.getMonth()===pm; });
+    prevIncome  = prev.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
+    prevExpense = prev.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
+    prevSavings = prev.filter(t=>t.type==='savings').reduce((s,t)=>s+t.amount,0);
+  }
+  const pctChg = (cur, prev) => {
+    if (prev === 0) return cur > 0 ? '+100 %' : '—';
+    const p = Math.round((cur - prev) / prev * 100);
+    return (p >= 0 ? '+' : '') + p + ' %';
+  };
+  const pctColor = (cur, prev, higherIsBetter) => {
+    if (prev === 0) return '';
+    return cur >= prev
+      ? (higherIsBetter ? 'color:var(--green)' : 'color:var(--red)')
+      : (higherIsBetter ? 'color:var(--red)'   : 'color:var(--green)');
+  };
+  const periodLabel = isYear ? String(selectedYear-1) : (() => { let pm=selectedMonth-1,py=selectedYear; if(pm<0){pm=11;py--;} return MONTHS_SHORT[pm]; })();
+  const fmtSub = (cur, prev, hib) => {
+    const p = pctChg(cur, prev);
+    const c = pctColor(cur, prev, hib);
+    return p === '—' ? '' : `<span style="${c};font-style:normal;font-weight:600;">${p}</span> vs ${periodLabel}`;
+  };
+  document.getElementById('statIncomeSub').innerHTML  = fmtSub(income,  prevIncome,  true);
+  document.getElementById('statExpenseSub').innerHTML = fmtSub(expense, prevExpense, false);
+
   renderChart();
   renderLineChart();
   renderDonut('income',  txs, income,  INCOME_COLORS,  'var(--green)');
@@ -919,16 +957,10 @@ function renderTxList() {
   el.innerHTML = keys.map(key => {
     const items = groups[key].items.sort((a,b)=>b.id-a.id);
     const open  = _openGroups.has(key);
-    const daySum = items.reduce((s,t)=> t.type==='income'? s+t.amount : s-t.amount, 0);
-    const daySumStr = (daySum>=0?'+':'−') + Math.abs(daySum).toLocaleString('cs-CZ') + ' Kč';
-    const daySumColor = daySum>=0 ? 'var(--green)' : 'var(--red)';
     return `<div>
       <div class="tx-date-row" onclick="toggleGroup('${key}')">
         <span>${key} <span style="color:var(--border2);margin-left:4px;font-size:9px;">${items.length} pol.</span></span>
-        <span style="display:flex;align-items:center;gap:8px;">
-          <span style="font-weight:600;color:${daySumColor};font-size:10px;">${daySumStr}</span>
-          <span class="tx-date-chev" style="transform:rotate(${open?'0':'180'}deg)">▲</span>
-        </span>
+        <span class="tx-date-chev" style="transform:rotate(${open?'0':'180'}deg)">▲</span>
       </div>
       <div class="tx-group-body" style="display:${open?'block':'none'}">
         ${items.map(t=>`
