@@ -1106,7 +1106,7 @@ function renderTxList() {
       <div style="flex:1;min-width:0">
         <div class="tx-desc">${t.desc}</div>
         <div class="tx-cat">
-          <select class="tx-cat-select" onchange="saveTxCat(${t.id}, this.value)">${opts}</select>
+          <select class="tx-cat-select" data-id="${t.id}">${opts}</select>
           <span style="color:var(--muted);font-size:10px;"> · ${fmtDate(t.date)}</span>
         </div>
       </div>
@@ -1119,9 +1119,13 @@ function renderTxList() {
 }
 
 async function saveTxCat(id, newCat) {
-  console.log('saveTxCat', id, newCat);
-  const tx = transactions.find(t => t.id === id);
-  if (!tx) { console.log('tx not found, id:', id, 'type:', typeof id); return; }
+  console.log('saveTxCat called:', id, newCat);
+  const numId = Number(id);
+  const tx = transactions.find(t => t.id === numId);
+  if (!tx) {
+    console.error('tx not found:', id, 'available ids:', transactions.slice(0,3).map(t=>t.id));
+    return;
+  }
   if (tx.cat === newCat) return;
   const oldCat = tx.cat;
   tx.cat = newCat;
@@ -1183,6 +1187,15 @@ async function init() {
   }
   updateCatSelect();
   updateLcCatSelect();
+
+  // single persistent listener for category changes in tx list
+  document.getElementById('txList').addEventListener('change', function(e) {
+    const sel = e.target.closest('.tx-cat-select');
+    if (!sel) return;
+    console.log('change detected', sel.dataset.id, sel.value);
+    saveTxCat(sel.dataset.id, sel.value);
+  });
+
   render();
 }
 
