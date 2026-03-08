@@ -438,7 +438,7 @@ async function apiGet() {
   const data = await res.json();
   if (!data.ok) throw new Error(data.error);
   return data.data.map(r => ({
-    id:     Number(r.id),
+    id:     String(r.id),
     type:   String(r.type),
     desc:   String(r.desc),
     amount: Number(r.amount),
@@ -541,7 +541,7 @@ async function addTransaction() {
   if (!amount || amount<=0) aEl.classList.add('error');
   if (!desc || !amount || amount<=0) return;
 
-  const tx = { id: Date.now(), type: currentType, desc, amount, cat, date };
+  const tx = { id: String(Date.now()), type: currentType, desc, amount, cat, date };
   const txDate = new Date(date);
   selectedYear  = txDate.getFullYear();
   selectedMonth = txDate.getMonth();
@@ -567,7 +567,7 @@ async function addTransaction() {
 
 async function deleteTransaction(id) {
   const backup = [...transactions];
-  transactions = transactions.filter(t => t.id !== id);
+  transactions = transactions.filter(t => String(t.id) !== String(id));
   render();
   try {
     setLoading(true);
@@ -1106,7 +1106,7 @@ function renderTxList() {
       <div style="flex:1;min-width:0">
         <div class="tx-desc">${t.desc}</div>
         <div class="tx-cat">
-          <select class="tx-cat-select" data-id="${t.id}" onchange="console.log('SELECT CHANGED',this.value);saveTxCat(this.dataset.id, this.value)">${opts}</select>
+          <select class="tx-cat-select" data-id="${String(t.id)}" onchange="console.log('SELECT CHANGED',this.value);saveTxCat(this.dataset.id, this.value)">${opts}</select>
           <span style="color:var(--muted);font-size:10px;"> · ${fmtDate(t.date)}</span>
         </div>
       </div>
@@ -1120,10 +1120,9 @@ function renderTxList() {
 
 async function saveTxCat(id, newCat) {
   console.log('saveTxCat called:', id, newCat);
-  const numId = Number(id);
-  const tx = transactions.find(t => t.id === numId);
+  const tx = transactions.find(t => String(t.id) === String(id));
   if (!tx) {
-    console.error('tx not found:', id, 'available ids:', transactions.slice(0,3).map(t=>t.id));
+    console.error('tx not found:', id, 'available ids:', transactions.slice(0,3).map(t=>String(t.id)));
     return;
   }
   if (tx.cat === newCat) return;
