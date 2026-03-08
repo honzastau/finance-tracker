@@ -78,7 +78,7 @@ header { background:var(--surface); border-bottom:1px solid var(--border); paddi
 .btn-submit:hover { opacity:0.82; }
 
 /* ── LAYOUT ── */
-.layout { display:grid; grid-template-columns:1fr 300px; max-width:1220px; margin:0 auto; padding:22px 28px; gap:18px; align-items:start; }
+.layout { display:grid; grid-template-columns:1fr 240px; max-width:1220px; margin:0 auto; padding:22px 28px; gap:18px; align-items:start; }
 
 /* ── CARDS ── */
 .card { background:var(--surface); border:1px solid var(--border); }
@@ -148,7 +148,7 @@ header { background:var(--surface); border-bottom:1px solid var(--border); paddi
 
 /* ── DONUT ── */
 .donut-section { padding:16px 18px; }
-.donut-wrap { position:relative; width:220px; height:220px; margin:0 auto 16px; }
+.donut-wrap { position:relative; width:200px; height:200px; margin:0 auto 16px; }
 .donut-wrap svg { transform:rotate(-90deg); }
 .donut-center { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; }
 .donut-center-val { font-family:'Plus Jakarta Sans',sans-serif; font-size:19px; font-weight:700; line-height:1; text-align:center; }
@@ -311,7 +311,6 @@ header { background:var(--surface); border-bottom:1px solid var(--border); paddi
             <div class="chart-bars" id="chart"></div>
           </div>
         </div>
-        </div>
         <div class="chart-legend">
           <div class="legend-item"><div class="legend-dot" style="background:var(--green-bar)"></div>Příjmy</div>
           <div class="legend-item"><div class="legend-dot" style="background:var(--red-bar)"></div>Výdaje</div>
@@ -363,7 +362,7 @@ header { background:var(--surface); border-bottom:1px solid var(--border); paddi
       <div class="card-header"><span class="card-title">Příjmy</span></div>
       <div class="donut-section">
         <div class="donut-wrap">
-          <svg width="220" height="220" viewBox="0 0 220 220" id="donutIncome"></svg>
+          <svg width="200" height="200" viewBox="0 0 200 200" id="donutIncome"></svg>
           <div class="donut-center">
             <div class="donut-center-val" id="donutIncomeVal" style="color:var(--green)">—</div>
           </div>
@@ -376,7 +375,7 @@ header { background:var(--surface); border-bottom:1px solid var(--border); paddi
       <div class="card-header"><span class="card-title">Výdaje</span></div>
       <div class="donut-section">
         <div class="donut-wrap">
-          <svg width="220" height="220" viewBox="0 0 220 220" id="donutExpense"></svg>
+          <svg width="200" height="200" viewBox="0 0 200 200" id="donutExpense"></svg>
           <div class="donut-center">
             <div class="donut-center-val" id="donutExpenseVal" style="color:var(--red)">—</div>
           </div>
@@ -389,7 +388,7 @@ header { background:var(--surface); border-bottom:1px solid var(--border); paddi
       <div class="card-header"><span class="card-title">Úspory</span></div>
       <div class="donut-section">
         <div class="donut-wrap">
-          <svg width="220" height="220" viewBox="0 0 220 220" id="donutSavings"></svg>
+          <svg width="200" height="200" viewBox="0 0 200 200" id="donutSavings"></svg>
           <div class="donut-center">
             <div class="donut-center-val" id="donutSavingsVal" style="color:var(--blue)">—</div>
           </div>
@@ -889,7 +888,7 @@ function renderDonut(type, txs, total) {
   const legEl  = document.getElementById('legend'+capType);
 
   if (!allSorted.length) {
-    svgEl.innerHTML = `<circle cx="110" cy="110" r="80" fill="none" stroke="var(--surface2)" stroke-width="20"/>`;
+    svgEl.innerHTML = `<circle cx="100" cy="100" r="74" fill="none" stroke="var(--surface2)" stroke-width="20"/>`;
     valEl.textContent = '—';
     legEl.innerHTML = '<div class="empty-donut">Žádná data</div>';
     return;
@@ -911,7 +910,7 @@ function renderDonut(type, txs, total) {
 
   const gradColors = getGradientColors(type, donutSlices.length);
 
-  const cx=110, cy=110, r=80, sw=20;
+  const cx=100, cy=100, r=74, sw=20;
   const circ = 2*Math.PI*r;
   let offset=0, paths='';
 
