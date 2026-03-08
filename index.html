@@ -136,6 +136,12 @@ header { background:var(--surface); border-bottom:1px solid var(--border); paddi
 .tx-icon { font-size:13px; text-align:center; flex-shrink:0; }
 .tx-desc { font-size:12px; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .tx-cat  { font-size:10px; color:var(--muted); margin-top:1px; }
+.tx-cat-name { cursor:pointer; border-bottom:1px dashed transparent; transition:border-color 0.15s; }
+.tx-row:hover .tx-cat-name { border-bottom-color:var(--muted); }
+.tx-cat-select { font-family:'Plus Jakarta Sans',sans-serif; font-size:10px; color:var(--text); background:var(--surface); border:1px solid var(--accent); padding:1px 4px; cursor:pointer; outline:none; }
+.cat-tag-name { cursor:pointer; flex:1; }
+.cat-tag-name:hover { color:var(--accent); }
+.cat-rename-input { font-family:'Plus Jakarta Sans',sans-serif; font-size:11px; color:var(--text); background:var(--surface); border:1px solid var(--accent); padding:2px 6px; flex:1; min-width:0; outline:none; }
 .tx-right { display:flex; align-items:center; gap:8px; flex-shrink:0; }
 .tx-amount { font-family:'Plus Jakarta Sans',sans-serif; font-size:12px; font-weight:600; white-space:nowrap; }
 .tx-amount.income  { color:var(--green); }
@@ -157,7 +163,7 @@ header { background:var(--surface); border-bottom:1px solid var(--border); paddi
 .donut-center-val { font-family:'Plus Jakarta Sans',sans-serif; font-size:17px; font-weight:700; line-height:1; text-align:center; }
 .donut-legend { display:flex; flex-direction:column; gap:7px; }
 .dl-row { display:flex; align-items:center; gap:7px; }
-.dl-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+.dl-dot { width:11px; height:11px; border-radius:50%; flex-shrink:0; }
 .dl-name { font-size:11px; color:var(--text); flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .dl-amt  { font-size:11px; font-weight:600; color:var(--text); flex-shrink:0; }
 .dl-pct  { font-size:10px; color:var(--muted); margin-left:2px; }
@@ -615,11 +621,41 @@ function setSdType(t) {
 function renderCatTags() {
   const cats = CATEGORIES[sdType];
   document.getElementById('catTags').innerHTML = cats.map((c,i) =>
-    `<div class="cat-tag">
-      <span>${ICONS[c]||'•'} ${c}</span>
+    `<div class="cat-tag" id="cattag-${i}">
+      <span class="cat-tag-name" onclick="startRenameCategory(${i})">${ICONS[c]||'•'} ${c}</span>
       <button class="cat-tag-del" onclick="removeCategory(${i})" title="Smazat">×</button>
     </div>`
   ).join('');
+}
+
+function startRenameCategory(idx) {
+  const tag = document.getElementById('cattag-' + idx);
+  const oldName = CATEGORIES[sdType][idx];
+  tag.innerHTML = `
+    <input class="cat-rename-input" value="${oldName}" id="catRenameInput-${idx}"
+      onkeydown="if(event.key==='Enter')commitRename(${idx});if(event.key==='Escape')renderCatTags();"
+      onblur="commitRename(${idx})">
+    <button class="cat-add-btn" onclick="commitRename(${idx})">✓</button>`;
+  const inp = document.getElementById('catRenameInput-' + idx);
+  inp.focus(); inp.select();
+}
+
+function commitRename(idx) {
+  const inp = document.getElementById('catRenameInput-' + idx);
+  if (!inp) return;
+  const newName = inp.value.trim();
+  const oldName = CATEGORIES[sdType][idx];
+  if (!newName || newName === oldName) { renderCatTags(); return; }
+  if (CATEGORIES[sdType].includes(newName)) { inp.select(); return; }
+  // update all existing transactions
+  transactions.forEach(t => { if (t.type === sdType && t.cat === oldName) t.cat = newName; });
+  CATEGORIES[sdType][idx] = newName;
+  if (ICONS[oldName]) { ICONS[newName] = ICONS[oldName]; }
+  renderCatTags();
+  updateCatSelect();
+  updateLcCatSelect();
+  saveCategories();
+  render();
 }
 
 function addCategory() {
@@ -849,10 +885,11 @@ function render() {
 
 // ── DONUT ────────────────────────────────────────────────
 function getGradientColors(type, n) {
+  // wider spread for better distinction between slices
   const palettes = {
-    income:  [[180,210,160],[60,120,50]],   // light green → dark green
-    expense: [[230,160,140],[180,60,40]],   // light red → dark red
-    savings: [[140,180,230],[40,90,175]],   // light blue → dark blue
+    income:  [[210,240,190],[30,100,25]],   // very light green → very dark green
+    expense: [[250,190,170],[140,30,10]],   // very light red → very dark red
+    savings: [[180,215,250],[20,60,160]],   // very light blue → very dark blue
   };
   const [lo, hi] = palettes[type] || palettes.income;
   return Array.from({length:n}, (_,i) => {
@@ -1025,17 +1062,52 @@ function renderTxList() {
   const fmtDate = d => new Date(d).toLocaleDateString('cs-CZ',{day:'numeric',month:'short'});
 
   el.innerHTML = filtered.map(t => `
-    <div class="tx-row">
+    <div class="tx-row" id="txrow-${t.id}">
       <div class="tx-icon">${ICONS[t.cat]||'•'}</div>
       <div style="flex:1;min-width:0">
         <div class="tx-desc">${t.desc}</div>
-        <div class="tx-cat">${t.cat} <span style="color:var(--muted);font-size:10px;">· ${fmtDate(t.date)}</span></div>
+        <div class="tx-cat">
+          <span class="tx-cat-name" onclick="openCatEdit(${t.id})" title="Klikni pro změnu kategorie">${t.cat}</span>
+          <span style="color:var(--muted);font-size:10px;"> · ${fmtDate(t.date)}</span>
+        </div>
       </div>
       <div class="tx-right">
         <div class="tx-amount ${t.type}">${sign(t)}${t.amount.toLocaleString('cs-CZ')} Kč</div>
         <button class="tx-del" onclick="deleteTransaction(${t.id})">×</button>
       </div>
     </div>`).join('');
+}
+
+function openCatEdit(id) {
+  const tx = transactions.find(t=>t.id===id);
+  if (!tx) return;
+  const cats = CATEGORIES[tx.type] || [];
+  const catEl = document.querySelector(`#txrow-${id} .tx-cat-name`);
+  if (!catEl) return;
+  const sel = document.createElement('select');
+  sel.className = 'tx-cat-select';
+  cats.forEach(c => {
+    const o = document.createElement('option');
+    o.value = c; o.textContent = c;
+    if (c === tx.cat) o.selected = true;
+    sel.appendChild(o);
+  });
+  sel.onchange = () => saveTxCat(id, sel.value);
+  sel.onblur = () => renderTxList();
+  catEl.replaceWith(sel);
+  sel.focus();
+}
+
+async function saveTxCat(id, newCat) {
+  const tx = transactions.find(t=>t.id===id);
+  if (!tx || tx.cat === newCat) { renderTxList(); return; }
+  tx.cat = newCat;
+  renderTxList();
+  render();
+  // persist to cloud
+  try {
+    await fetch(API_URL + `?action=updateCat&id=${id}&cat=${encodeURIComponent(newCat)}`);
+  } catch(e) { console.warn('updateCat failed', e); }
 }
 
 // ── INIT ─────────────────────────────────────────────────
