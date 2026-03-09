@@ -877,11 +877,19 @@ function renderLineChart() {
     return `<text x="${x.toFixed(1)}" y="${(H-6).toFixed(1)}" text-anchor="middle" fill="${isActive?'var(--accent)':'var(--muted)'}" font-size="8" font-weight="${isActive?'700':'400'}" font-family="Bricolage Grotesque,sans-serif" text-transform="uppercase">${m}</text>`;
   }).join('');
 
-  const dots = points.map((p,i) =>
-    `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="5" fill="transparent" stroke="transparent"
-      onmouseenter="showBarTip(event,'${MONTHS_SHORT[i]}: ${p.v>0?fmtShort(p.v):'0 Kč'}','${colorSolid}')"
-      onmouseleave="hideBarTip()"/>
-     <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="2.5" fill="${p.v>0?colorSolid:'var(--border)'}" pointer-events="none"/>`
+  const hitAreas = points.map((p,i) => {
+    const x0 = i===0 ? PAD.left : (points[i-1].x + p.x)/2;
+    const x1 = i===11 ? PAD.left+innerW : (p.x + points[i+1].x)/2;
+    const tipData = JSON.stringify({i, vals}).replace(/"/g,'&quot;');
+    return `<rect x="${x0.toFixed(1)}" y="${PAD.top}" width="${(x1-x0).toFixed(1)}" height="${innerH}" fill="transparent"
+      onmouseenter="showLcTip(event,${i},${JSON.stringify(vals)},${JSON.stringify(MONTHS_SHORT)},${JSON.stringify(colorSolid)})"
+      onmouseleave="hideLcTip()"/>`;
+  }).join('');
+
+  const crosshair = `<line id="lcCross" x1="0" y1="${PAD.top}" x2="0" y2="${PAD.top+innerH}" stroke="var(--muted)" stroke-width="1" stroke-dasharray="3,3" opacity="0" pointer-events="none"/>`;
+
+  const visibleDots = points.map((p,i) =>
+    `<circle id="lcdot${i}" cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3" fill="${p.v>0?colorSolid:'var(--border)'}" pointer-events="none"/>`
   ).join('');
 
   const gradId = 'lcGrad_' + lcType;
@@ -897,10 +905,50 @@ function renderLineChart() {
     ${gridLines}
     <path d="${areaD}" fill="url(#${gradId})"/>
     <path d="${pathD}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
-    ${dots}
+    ${visibleDots}
     ${yLabels}
     ${xLabels}
+    ${crosshair}
+    ${hitAreas}
   `;
+}
+
+(function() {
+  const tip = document.createElement('div');
+  tip.id = 'lcTip';
+  tip.style.cssText = 'position:fixed;display:none;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 14px;font-family:Plus Jakarta Sans,sans-serif;font-size:11px;color:var(--text);pointer-events:none;z-index:9999;box-shadow:0 4px 16px rgba(42,34,24,0.14);min-width:130px;';
+  document.body.appendChild(tip);
+})();
+
+function showLcTip(event, idx, vals, months, color) {
+  const tip = document.getElementById('lcTip');
+  tip.innerHTML = vals.map((v, i) => {
+    const active = i === idx;
+    const dot = `<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${active ? color : 'var(--border)'};margin-right:6px;flex-shrink:0;"></span>`;
+    return `<div style="display:flex;align-items:center;justify-content:space-between;gap:14px;line-height:1.8;${active ? `font-weight:700;color:${color};` : 'color:var(--muted);'}">${dot}<span style="flex:1">${months[i]}</span><span>${v > 0 ? v.toLocaleString('cs-CZ') + ' Kč' : '—'}</span></div>`;
+  }).join('');
+  tip.style.display = 'block';
+  const tipW = 160;
+  let x = event.clientX + 16;
+  let y = event.clientY - tip.offsetHeight / 2;
+  if (x + tipW > window.innerWidth - 8) x = event.clientX - tipW - 8;
+  if (y < 8) y = 8;
+  tip.style.left = x + 'px';
+  tip.style.top  = y + 'px';
+  const cross = document.getElementById('lcCross');
+  if (cross) {
+    const svgRect = document.getElementById('lineChart').getBoundingClientRect();
+    const svgX = event.clientX - svgRect.left;
+    cross.setAttribute('x1', svgX); cross.setAttribute('x2', svgX);
+    cross.setAttribute('opacity', '0.6');
+  }
+}
+
+function hideLcTip() {
+  const tip = document.getElementById('lcTip');
+  if (tip) tip.style.display = 'none';
+  const cross = document.getElementById('lcCross');
+  if (cross) cross.setAttribute('opacity', '0');
 }
 
 // ── RENDER ───────────────────────────────────────────────
@@ -970,9 +1018,9 @@ function render() {
 function getGradientColors(type, n) {
   // biggest slice (index 0) = darkest, smallest = lightest
   const palettes = {
-    income:  [[210,240,190],[30,100,25]],
-    expense: [[250,190,170],[140,30,10]],
-    savings: [[180,215,250],[20,60,160]],
+    income:  [[210,245,200],[60,160,60]],   // světle zelená → střední zelená
+    expense: [[255,200,185],[200,65,45]],   // světle lososová → střední červená
+    savings: [[185,220,255],[50,130,220]],  // světle modrá → střední modrá
   };
   const [lo, hi] = palettes[type] || palettes.income;
   return Array.from({length:n}, (_,i) => {
