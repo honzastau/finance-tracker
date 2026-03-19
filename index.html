@@ -246,10 +246,14 @@ header { background:var(--surface); border-bottom:1px solid var(--border); paddi
         </div>
         <input  class="finput"  id="descInput"   type="text"   placeholder="Popis transakce...">
         <div class="form-row">
-          <input  class="finput"  id="amountInput" type="number" placeholder="Částka" min="0" step="0.01">
+          <input  class="finput"  id="amountInput" type="number" placeholder="Částka" min="0.01" step="0.01">
           <select class="fselect" id="catSelect"></select>
         </div>
         <input  class="finput"  id="dateInput" type="date">
+        <div id="refundRow" style="display:none;align-items:center;gap:8px;padding:2px 0;">
+          <input type="checkbox" id="refundCheck" style="width:15px;height:15px;cursor:pointer;accent-color:var(--green);">
+          <label for="refundCheck" style="font-size:12px;color:var(--muted);cursor:pointer;user-select:none;">Odečíst od výdajů <span style="color:var(--green)">(vrácení / sdílení útraty)</span></label>
+        </div>
         <button class="btn-submit" onclick="addTransaction()">Přidat transakci</button>
       </div>
     </div>
@@ -418,7 +422,7 @@ header { background:var(--surface); border-bottom:1px solid var(--border); paddi
 
 <script>
 // ── HESLO ─────────────────────────────────────────────────
-const APP_PASSWORD = '0411';
+const APP_PASSWORD = 'ZMENTE_HESLO_ZDE';
 
 (function() {
   const stored = sessionStorage.getItem('ft_auth');
@@ -565,6 +569,8 @@ function toggleDropdown() {
 function closeDropdown() {
   document.getElementById('addDropdown').classList.remove('open');
   document.getElementById('btnAdd').classList.remove('open');
+  const rc = document.getElementById('refundCheck');
+  if (rc) rc.checked = false;
 }
 document.addEventListener('click', e => {
   if (!document.querySelector('.add-wrap').contains(e.target)) closeDropdown();
@@ -577,6 +583,9 @@ function setType(t) {
   ['income','expense','savings'].forEach(x => {
     document.getElementById('btn' + x.charAt(0).toUpperCase() + x.slice(1)).classList.toggle('active', x===t);
   });
+  // Zobraz/skryj refund checkbox
+  const refundRow = document.getElementById('refundRow');
+  if (refundRow) refundRow.style.display = t === 'expense' ? 'flex' : 'none';
   updateCatSelect();
 }
 function updateCatSelect() {
@@ -587,15 +596,17 @@ async function addTransaction() {
   const dEl = document.getElementById('descInput');
   const aEl = document.getElementById('amountInput');
   const desc   = dEl.value.trim();
-  const amount = parseFloat(aEl.value);
+  const amount = parseFloat(aEl.value.replace(',', '.'));
   const cat    = document.getElementById('catSelect').value;
   const date   = document.getElementById('dateInput').value;
+  const isRefund = currentType === 'expense' && document.getElementById('refundCheck')?.checked;
   dEl.classList.remove('error'); aEl.classList.remove('error');
-  if (!desc)                dEl.classList.add('error');
-  if (!amount || amount<=0) aEl.classList.add('error');
-  if (!desc || !amount || amount<=0) return;
+  if (!desc) dEl.classList.add('error');
+  if (isNaN(amount) || amount <= 0) aEl.classList.add('error');
+  if (!desc || isNaN(amount) || amount <= 0) return;
 
-  const tx = { id: String(Date.now()), type: currentType, desc, amount, cat, date };
+  const finalAmount = isRefund ? -amount : amount;
+  const tx = { id: String(Date.now()), type: currentType, desc, amount: finalAmount, cat, date };
   const txDate = new Date(date);
   selectedYear  = txDate.getFullYear();
   selectedMonth = txDate.getMonth();
@@ -1196,7 +1207,7 @@ function renderTxList() {
     return;
   }
 
-  const sign = t => t.type==='income'?'+' : t.type==='savings'?'⬡' : '−';
+  const sign = t => t.type==='income' ? '+' : t.type==='savings' ? '⬡' : t.amount < 0 ? '+' : '−';
   const fmtDate = d => new Date(d).toLocaleDateString('cs-CZ',{day:'numeric',month:'short'});
 
   el.innerHTML = filtered.map(t => {
@@ -1213,7 +1224,7 @@ function renderTxList() {
         </div>
       </div>
       <div class="tx-right">
-        <div class="tx-amount ${t.type}">${sign(t)}${t.amount.toLocaleString('cs-CZ')} Kč</div>
+        <div class="tx-amount ${t.type}${t.type==='expense' && t.amount<0?' income':''}">${sign(t)}${Math.abs(t.amount).toLocaleString('cs-CZ')} Kč</div>
         <button class="tx-del" onclick="deleteTransaction(${t.id})">×</button>
       </div>
     </div>`;
