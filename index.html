@@ -424,6 +424,42 @@ header { background:var(--surface); border-bottom:1px solid var(--border); paddi
 </div>
 
 <script>
+// ── HESLO ─────────────────────────────────────────────────
+const APP_PASSWORD = 'ZMENTE_HESLO_ZDE';
+
+(function() {
+  if (sessionStorage.getItem('ft_auth') === APP_PASSWORD) return;
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:#1a1f12;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;gap:16px;';
+  overlay.innerHTML = `
+    <div style="font-family:'Geologica',sans-serif;font-size:22px;font-weight:800;color:#f5f8f0;letter-spacing:0.1em;text-transform:uppercase;">Finance Tracker</div>
+    <div style="font-family:'DM Sans',sans-serif;font-size:13px;color:#8a9478;margin-bottom:8px;">Zadejte heslo pro přístup</div>
+    <input id="authInput" type="password" placeholder="Heslo" style="font-family:'DM Sans',sans-serif;font-size:14px;padding:10px 16px;border-radius:8px;border:1px solid #3a4a2a;background:#2a3520;color:#f5f8f0;outline:none;width:220px;text-align:center;" />
+    <button id="authBtn" style="font-family:'Geologica',sans-serif;font-size:13px;font-weight:700;padding:10px 28px;border-radius:8px;background:#6abf00;color:#fff;border:none;cursor:pointer;letter-spacing:0.05em;">Vstoupit</button>
+    <div id="authErr" style="font-size:12px;color:#e03030;height:16px;font-family:'DM Sans',sans-serif;"></div>
+  `;
+  document.body.appendChild(overlay);
+
+  function tryLogin() {
+    const val = document.getElementById('authInput').value;
+    if (val === APP_PASSWORD) {
+      sessionStorage.setItem('ft_auth', APP_PASSWORD);
+      overlay.remove();
+    } else {
+      document.getElementById('authErr').textContent = 'Špatné heslo';
+      document.getElementById('authInput').value = '';
+      document.getElementById('authInput').focus();
+    }
+  }
+
+  document.getElementById('authBtn').addEventListener('click', tryLogin);
+  document.getElementById('authInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') tryLogin();
+  });
+  setTimeout(() => document.getElementById('authInput').focus(), 100);
+})();
+// ─────────────────────────────────────────────────────────
+
 const MONTHS       = ['Leden','Únor','Březen','Duben','Květen','Červen','Červenec','Srpen','Září','Říjen','Listopad','Prosinec'];
 const MONTHS_SHORT = ['Led','Úno','Bře','Dub','Kvě','Čvn','Čvc','Srp','Zář','Říj','Lis','Pro'];
 
