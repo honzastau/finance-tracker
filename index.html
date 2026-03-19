@@ -165,18 +165,18 @@ header { background:var(--surface); border-bottom:1px solid var(--border); paddi
 /* ── IMPORT MODAL ── */
 .import-overlay { position:fixed; inset:0; background:rgba(26,20,10,0.45); z-index:500; display:flex; align-items:center; justify-content:center; opacity:0; pointer-events:none; transition:opacity 0.2s; }
 .import-overlay.open { opacity:1; pointer-events:all; }
-.import-modal { background:var(--surface); border:1px solid var(--border); border-radius:16px; width:480px; max-width:95vw; box-shadow:0 16px 48px rgba(26,20,10,0.18); transform:translateY(12px); transition:transform 0.2s; }
+.import-modal { background:var(--surface); border:1px solid var(--border); border-radius:16px; width:720px; max-width:96vw; max-height:90vh; display:flex; flex-direction:column; box-shadow:0 16px 48px rgba(26,20,10,0.18); transform:translateY(12px); transition:transform 0.2s; }
 .import-overlay.open .import-modal { transform:translateY(0); }
-.import-modal-header { padding:14px 20px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+.import-modal-header { padding:14px 20px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
 .import-modal-title { font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:13px; }
-.import-modal-body { padding:20px; display:flex; flex-direction:column; gap:14px; }
+.import-modal-body { padding:20px; display:flex; flex-direction:column; gap:14px; overflow-y:auto; flex:1; }
 .import-drop { border:2px dashed var(--border); border-radius:10px; padding:32px; text-align:center; cursor:pointer; transition:all 0.15s; }
 .import-drop:hover, .import-drop.drag { border-color:var(--accent); background:var(--accent-light); }
 .import-drop-icon { font-size:28px; margin-bottom:8px; }
 .import-drop-text { font-size:12px; color:var(--muted); }
 .import-drop-text strong { color:var(--accent); cursor:pointer; }
-.import-results { display:flex; flex-direction:column; gap:6px; max-height:320px; overflow-y:auto; }
-.import-tx-row { display:flex; align-items:center; gap:10px; padding:8px 10px; border:1px solid var(--border); border-radius:8px; font-size:11px; }
+.import-results { display:flex; flex-direction:column; gap:4px; max-height:55vh; overflow-y:auto; }
+.import-tx-row { display:grid; grid-template-columns:20px 80px 1fr auto auto auto; gap:8px; align-items:center; padding:7px 10px; border:1px solid var(--border); border-radius:8px; font-size:11px; font-family:'Plus Jakarta Sans',sans-serif; }
 .import-tx-row select { font-family:'Plus Jakarta Sans',sans-serif; font-size:11px; border:1px solid var(--border); border-radius:6px; padding:3px 6px; background:var(--surface2); color:var(--text); outline:none; cursor:pointer; }
 .import-tx-row select:focus { border-color:var(--accent); }
 .import-tx-check { width:16px; height:16px; cursor:pointer; flex-shrink:0; accent-color:var(--accent); }
@@ -1410,34 +1410,57 @@ function parseCsv(text, filename) {
   const isBeznyCS = h.includes('číslo účtu') && h.includes('zpráva');
   const isMoneta  = h.includes('iban') && h.includes('zpráva pro příjemce');
 
+  // Vlastní účty — převody mezi nimi se filtrují
+  const OWN_ACCOUNTS = ['1319720004', '216228979', '258320693', '1319763004', '531533', '520655'];
+
+  function isInternalTransfer(row) {
+    const d = (row.desc || '').toLowerCase();
+    const cp = (row.counterpart || '').toLowerCase();
+    // Splátky kreditní karty
+    if (d.includes('splátka klienta') || d.includes('splatka klienta')) return true;
+    // Přesun mezi vlastními účty podle čísla protiúčtu
+    if (cp && OWN_ACCOUNTS.some(a => cp.includes(a))) return true;
+    // Obecné interní přesuny
+    if ((d.includes('staudinger') || d.includes('jan staudinger')) && (d.includes('okamžitá úhrada') || d.includes('příchozí') || d.includes('odchozí') || cp.includes('258320693') || cp.includes('1319720004') || cp.includes('216228979'))) return true;
+    return false;
+  }
+
   for (let i = 1; i < lines.length; i++) {
     const f = parseRow(lines[i]);
     const get = (col) => (f[headers.findIndex(x => x === col)] || '').trim();
 
-    let date, desc, amount;
+    let date, desc, amount, counterpart;
 
     if (isKartaCS) {
       date = parseDate(get('Datum transakce'));
       amount = parseAmount(get('Zaúčtovaná částka'));
       desc = get('Název Obchodníka') || get('Popis/Místo transakce') || get('Typ transakce');
+      counterpart = '';
     } else if (isBeznyCS) {
       date = parseDate(get('Datum provedení'));
       amount = parseAmount(get('Zaúčtovaná částka'));
       desc = get('Zpráva') || get('Poznámka') || get('Název protiúčtu') || get('Typ transakce');
+      counterpart = get('Číslo protiúčtu');
     } else if (isMoneta) {
       date = parseDate(get('Splatnost'));
       amount = parseAmount(get('Částka'));
       desc = get('Zpráva pro příjemce') || get('Poznámka pro mě') || get('Popis platby') || get('Typ transakce');
+      counterpart = get('Číslo protiúčtu');
     } else {
-      // fallback — zkus najít datum a částku podle pozice
       date = parseDate(f[0]) || parseDate(f[1]);
       amount = parseAmount(f.find(x => x.match(/^-?[\d\s]+,\d{2}$/)) || '');
       desc = f[2] || f[3] || '';
+      counterpart = '';
     }
 
-    if (!date || amount === null || isNaN(amount)) continue;
-    desc = desc.replace(/^"|"$/g, '').slice(0, 60);
-    rows.push({ date, desc, amount });
+    if (!date || amount === null || isNaN(amount) || amount === 0) continue;
+    desc = desc.replace(/^"|"$/g, '').slice(0, 80);
+    const row = { date, desc, amount, counterpart };
+    if (isInternalTransfer(row)) {
+      rows.push({ date, desc, amount, internal: true });
+    } else {
+      rows.push({ date, desc, amount });
+    }
   }
   return rows;
 }
@@ -1495,7 +1518,7 @@ async function categorizeTxs(rows) {
       else cat = 'Jiné';
     }
 
-    return { date: r.date, desc: r.desc, amount: Math.abs(r.amount), type, cat };
+    return { date: r.date, desc: r.desc, amount: Math.abs(r.amount), type, cat, internal: r.internal || false };
   });
 }
 
@@ -1517,8 +1540,22 @@ function renderImportResults() {
   const actEl = document.getElementById('importActions');
   actEl.style.display = 'flex';
 
-  el.innerHTML = `<div style="font-size:11px;color:var(--muted);margin-bottom:4px;">Nalezeno ${importedTxs.length} transakcí — zkontroluj a uprav kategorie:</div>` +
+  const normal = importedTxs.filter(tx => !tx.internal);
+  const internal = importedTxs.filter(tx => tx.internal);
+
+  el.innerHTML = `<div style="font-size:11px;color:var(--muted);margin-bottom:4px;">Nalezeno ${normal.length} transakcí k importu${internal.length ? `, ${internal.length} přesunů mezi vlastními účty` : ''}:</div>` +
     importedTxs.map((tx, i) => {
+      if (tx.internal) {
+        const sign = tx.amount >= 0 ? '+' : '−';
+        const amtColor = tx.amount >= 0 ? 'color:var(--muted)' : 'color:var(--muted)';
+        return `<div class="import-tx-row" style="opacity:0.45;background:var(--surface2);">
+          <input type="checkbox" class="import-tx-check" disabled data-idx="${i}">
+          <span style="color:var(--muted);white-space:nowrap;">${tx.date.slice(5)}</span>
+          <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted);" title="${tx.desc}">${tx.desc}</span>
+          <span style="font-size:10px;color:var(--muted);grid-column:span 2;font-style:italic;">↔ přesun mezi vlastními účty</span>
+          <span style="text-align:right;color:var(--muted);white-space:nowrap;">${sign}${tx.amount.toLocaleString('cs-CZ')} Kč</span>
+        </div>`;
+      }
       const cats = CATEGORIES[tx.type] || [];
       const opts = cats.map(c => `<option value="${c}"${c===tx.cat?' selected':''}>${c}</option>`).join('');
       const typeOpts = ['income','expense','savings'].map(t => `<option value="${t}"${t===tx.type?' selected':''}>${t==='income'?'↑ Příjem':t==='expense'?'↓ Výdaj':'⬡ Úspory'}</option>`).join('');
@@ -1526,17 +1563,18 @@ function renderImportResults() {
       const sign = tx.type === 'income' ? '+' : tx.type === 'savings' ? '⬡' : '−';
       return `<div class="import-tx-row">
         <input type="checkbox" class="import-tx-check" checked data-idx="${i}">
-        <div class="import-tx-desc" title="${tx.desc}">${tx.date.slice(5)} · ${tx.desc}</div>
-        <select onchange="importedTxs[${i}].type=this.value;renderImportResults()" style="font-size:10px;padding:2px 4px;">${typeOpts}</select>
-        <select onchange="importedTxs[${i}].cat=this.value" style="font-size:10px;padding:2px 4px;">${opts}</select>
-        <div class="import-tx-amount ${amtClass}">${sign}${tx.amount.toLocaleString('cs-CZ')} Kč</div>
+        <span style="color:var(--muted);white-space:nowrap;">${tx.date.slice(5)}</span>
+        <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${tx.desc}">${tx.desc}</span>
+        <select onchange="importedTxs[${i}].type=this.value;renderImportResults()">${typeOpts}</select>
+        <select onchange="importedTxs[${i}].cat=this.value">${opts}</select>
+        <span class="import-tx-amount ${amtClass}" style="text-align:right;">${sign}${tx.amount.toLocaleString('cs-CZ')} Kč</span>
       </div>`;
     }).join('');
 }
 
 async function confirmImport() {
   const checks = document.querySelectorAll('.import-tx-check');
-  const selected = importedTxs.filter((_, i) => checks[i]?.checked);
+  const selected = importedTxs.filter((tx, i) => !tx.internal && checks[i]?.checked);
   if (!selected.length) { showImportStatus('Nevybral jsi žádné transakce.', true); return; }
 
   setLoading(true);
