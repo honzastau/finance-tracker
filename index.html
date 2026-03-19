@@ -197,7 +197,9 @@ header { background:var(--surface); border-bottom:1px solid var(--border); paddi
 .lc-type-btn.active.expense { background:var(--red-bg); color:var(--red); }
 .lc-type-btn.active.savings { background:var(--blue-bg); color:var(--blue); }
 
-#loadingBar { position:fixed; top:0; left:0; right:0; height:4px; background:linear-gradient(90deg,#6abf00,#c8ff00,#6abf00); background-size:200%; animation:shimmer 0.8s infinite linear; opacity:0; transition:opacity 0.15s; z-index:9999; box-shadow:0 0 12px 2px #6abf00, 0 0 4px 1px #c8ff00; }
+#loadingBar { position:fixed; top:0; left:0; right:0; height:4px; background:#6abf00; opacity:0; transition:opacity 0.15s; z-index:9999; overflow:hidden; }
+#loadingBar::after { content:''; position:absolute; top:-2px; left:-60%; width:40%; height:8px; background:linear-gradient(90deg, transparent, #eeff88, #ffffff, #eeff88, transparent); animation:loadingSweep 1s infinite linear; border-radius:50%; filter:blur(2px); }
+@keyframes loadingSweep { from { left:-40%; } to { left:120%; } }
 @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
 
 ::-webkit-scrollbar { width:5px; }
