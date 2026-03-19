@@ -1585,7 +1585,10 @@ function renderImportResults() {
       return `<div class="import-tx-row">
         <input type="checkbox" class="import-tx-check" checked data-idx="${i}">
         <span style="color:var(--muted);white-space:nowrap;">${tx.date.slice(5)}</span>
-        <input type="text" value="${tx.desc}" onchange="importedTxs[${i}].desc=this.value" style="font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;border:none;border-bottom:1px solid var(--border);background:transparent;color:var(--text);outline:none;width:100%;min-width:0;padding:1px 2px;" title="${tx.cpDisplay||''}" placeholder="Popis">
+        <div style="min-width:0;overflow:hidden;">
+          <input type="text" value="${tx.desc}" onchange="importedTxs[${i}].desc=this.value" style="font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;border:none;border-bottom:1px solid var(--border);background:transparent;color:var(--text);outline:none;width:100%;min-width:0;padding:1px 2px;" placeholder="Popis">
+          ${tx.cpDisplay ? `<div style="font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px;">↳ ${tx.cpDisplay}</div>` : ''}
+        </div>
         <select onchange="importedTxs[${i}].type=this.value;importedTxs[${i}].learned=false;importedTxs[${i}].refund=false;renderImportResults()">${typeOpts}</select>
         <select onchange="importedTxs[${i}].cat=this.value;importedTxs[${i}].learned=false;">${opts}</select>
         <span class="import-tx-amount ${isRefund?'income':amtClass}" style="display:flex;align-items:center;gap:2px;text-align:right;">${signBtn}${tx.amount.toLocaleString('cs-CZ')} Kč</span>
