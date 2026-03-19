@@ -236,7 +236,7 @@ header { background:var(--surface); border-bottom:1px solid var(--border); paddi
   <div class="add-wrap">
     <button class="btn-import" onclick="toggleImport()" id="btnImport">⬆ Import výpisu</button>
   </div>
-  <div class="add-wrap">
+  <div class="add-wrap" id="addWrap">
     <button class="btn-add" id="btnAdd" onclick="toggleDropdown()">
       + Přidat <span class="chev">▼</span>
     </button>
@@ -539,7 +539,7 @@ function closeDropdown() {
   document.getElementById('btnAdd').classList.remove('open');
 }
 document.addEventListener('click', e => {
-  if (!document.querySelector('.add-wrap').contains(e.target)) closeDropdown();
+  if (!document.getElementById('addWrap').contains(e.target)) closeDropdown();
 });
 document.addEventListener('keydown', e => { if (e.key==='Escape') closeDropdown(); });
 
