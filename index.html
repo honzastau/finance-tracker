@@ -100,7 +100,9 @@ header { background:var(--surface); border-bottom:1px solid var(--border); paddi
 .tx-row { display:grid; grid-template-columns:20px 1fr auto; gap:10px; align-items:center; padding:8px 18px; border-bottom:1px solid var(--border); transition:background 0.1s; }
 .tx-row:hover { background:var(--surface2); }
 .tx-icon { font-size:13px; text-align:center; flex-shrink:0; }
-.tx-desc { font-size:12px; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.tx-desc { font-size:12px; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; outline:none; border-radius:3px; }
+.tx-desc:hover { background:var(--surface2); text-overflow:clip; }
+.tx-desc:focus { background:var(--surface2); outline:none; white-space:nowrap; overflow:visible; box-shadow:0 0 0 1px var(--accent); padding:0 3px; }
 .tx-cat  { font-size:10px; color:var(--muted); margin-top:1px; }
 .tx-cat-select { font-family:'DM Mono',monospace; font-size:10px; color:var(--muted); background:transparent; border:none; border-bottom:1px dashed var(--border); padding:0 2px; cursor:pointer; outline:none; max-width:160px; }
 .tx-cat-select:hover, .tx-cat-select:focus { border-bottom-color:var(--accent); color:var(--text); }
@@ -195,7 +197,7 @@ header { background:var(--surface); border-bottom:1px solid var(--border); paddi
 .lc-type-btn.active.expense { background:var(--red-bg); color:var(--red); }
 .lc-type-btn.active.savings { background:var(--blue-bg); color:var(--blue); }
 
-#loadingBar { position:fixed; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg,var(--accent),#a8e040,var(--accent)); background-size:200%; animation:shimmer 1.5s infinite; opacity:0; transition:opacity 0.2s; z-index:9999; }
+#loadingBar { position:fixed; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg,var(--accent),#a8e040,var(--accent)); background-size:200%; animation:shimmer 1s infinite; opacity:0; transition:opacity 0.15s; z-index:9999; box-shadow:0 0 8px var(--accent); }
 @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
 
 ::-webkit-scrollbar { width:5px; }
@@ -428,10 +430,10 @@ const CATEGORIES = {
 
 const ICONS = {
   'Zaměstnání':'💼','Projekční práce':'📐','Stavební práce':'🏗️','Projekty JJ':'🗂️','Příjmy z cenných papírů':'📈','Jiné':'💰',
-  'Bydlení':'🏠','Cestování':'✈️','Doprava':'🚆','Dárky/charita':'🎁','Hospody/bary/plesy':'🍺',
+  'Bydlení':'🏠','Cestování':'✈️','Doprava':'🚗','Dárky/charita':'🎁','Hospody/bary/plesy':'🍺',
   'Koncerty/kino/divadlo':'🎭','Odvody/daně':'🏛️','Potraviny':'🛒','Předplatné/média':'📺',
-  'Restaurace/kavárny':'☕','Sport/relax':'⚽','Výplaty+jiné výdaje':'💸','Věci':'🛍️','Zdravotní péče':'💊',
-  'Bitcoin':'₿','DIP':'🧓','Trading212':'📊'
+  'Restaurace/kavárny':'🍽️','Sport/relax':'🏃','Výplaty+jiné výdaje':'💸','Věci':'🛍️','Zdravotní péče':'💊',
+  'Bitcoin':'₿','DIP':'🧓','Trading212':'📊','Jiné':'❓'
 };
 
 const EXPENSE_COLORS = ['#e07048','#c07840','#e8a838','#9b6dd6','#d45c9b','#5b9bd5','#38b8a0','#6a9fd8','#8bc34a','#72b05a'];
@@ -488,7 +490,9 @@ async function apiSaveAll(txs) {
 function setLoading(on) {
   isLoading = on;
   document.getElementById('loadingBar').style.opacity = on ? '1' : '0';
-  document.querySelector('.btn-submit').disabled = on;
+  document.getElementById('loadingBar').style.height = on ? '3px' : '2px';
+  const btn = document.querySelector('.btn-submit');
+  if (btn) btn.disabled = on;
 }
 
 function showError(msg) {
@@ -857,12 +861,14 @@ function renderLineChart() {
     return `<text x="${x.toFixed(1)}" y="${(H-6).toFixed(1)}" text-anchor="middle" fill="${isActive?'var(--accent)':'var(--muted)'}" font-size="8" font-weight="${isActive?'700':'400'}" font-family="Bricolage Grotesque,sans-serif" text-transform="uppercase">${m}</text>`;
   }).join('');
 
+  const valsJson = encodeURIComponent(JSON.stringify(vals));
+  const monthsJson = encodeURIComponent(JSON.stringify(MONTHS_SHORT));
+
   const hitAreas = points.map((p,i) => {
     const x0 = i===0 ? PAD.left : (points[i-1].x + p.x)/2;
     const x1 = i===11 ? PAD.left+innerW : (p.x + points[i+1].x)/2;
-    const tipData = JSON.stringify({i, vals}).replace(/"/g,'&quot;');
     return `<rect x="${x0.toFixed(1)}" y="${PAD.top}" width="${(x1-x0).toFixed(1)}" height="${innerH}" fill="transparent"
-      onmouseenter="showLcTip(event,${i},${JSON.stringify(vals)},${JSON.stringify(MONTHS_SHORT)},${JSON.stringify(colorSolid)})"
+      onmouseenter="showLcTip(event,${i},'${valsJson}','${monthsJson}','${colorSolid}')"
       onmouseleave="hideLcTip()"/>`;
   }).join('');
 
@@ -900,7 +906,9 @@ function renderLineChart() {
   document.body.appendChild(tip);
 })();
 
-function showLcTip(event, idx, vals, months, color) {
+function showLcTip(event, idx, valsEncoded, monthsEncoded, color) {
+  const vals = JSON.parse(decodeURIComponent(valsEncoded));
+  const months = JSON.parse(decodeURIComponent(monthsEncoded));
   const tip = document.getElementById('lcTip');
   tip.innerHTML = vals.map((v, i) => {
     const active = i === idx;
@@ -1169,7 +1177,7 @@ function renderTxList() {
     <div class="tx-row">
       <div class="tx-icon">${ICONS[t.cat]||'•'}</div>
       <div style="flex:1;min-width:0">
-        <div class="tx-desc">${t.desc}</div>
+        <div class="tx-desc" contenteditable="true" data-id="${String(t.id)}" onblur="saveTxDesc(this.dataset.id, this.textContent.trim())" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" spellcheck="false">${t.desc}</div>
         <div class="tx-cat">
           <select class="tx-cat-select" data-id="${String(t.id)}" onchange="saveTxCat(this.dataset.id, this.value)">${opts}</select>
           <span style="color:var(--muted);font-size:10px;"> · ${fmtDate(t.date)}</span>
@@ -1209,6 +1217,21 @@ async function saveTxCat(id, newCat) {
     tx.cat = oldCat;
   } finally {
     setLoading(false);
+  }
+}
+
+async function saveTxDesc(id, newDesc) {
+  const tx = transactions.find(t => String(t.id) === String(id));
+  if (!tx || !newDesc || newDesc === tx.desc) return;
+  const oldDesc = tx.desc;
+  tx.desc = newDesc;
+  try {
+    await apiDelete(tx.id);
+    await fetch(API_URL + '?action=add&tx=' + encodeURIComponent(JSON.stringify(tx)));
+  } catch(e) {
+    console.error('saveTxDesc failed:', e);
+    tx.desc = oldDesc;
+    render();
   }
 }
 
@@ -1567,7 +1590,7 @@ function renderImportResults() {
       return `<div class="import-tx-row">
         <input type="checkbox" class="import-tx-check" checked data-idx="${i}">
         <span style="color:var(--muted);white-space:nowrap;">${tx.date.slice(5)}</span>
-        <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${tx.desc}">${tx.desc}${tx.cpDisplay ? `<span style="color:var(--muted);font-size:10px;"> · ${tx.cpDisplay}</span>` : ''}</span>
+        <input type="text" value="${tx.desc}" onchange="importedTxs[${i}].desc=this.value" style="font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;border:none;border-bottom:1px solid var(--border);background:transparent;color:var(--text);outline:none;width:100%;min-width:0;padding:1px 2px;" title="${tx.cpDisplay||''}" placeholder="Popis">
         <select onchange="importedTxs[${i}].type=this.value;importedTxs[${i}].learned=false;importedTxs[${i}].refund=false;renderImportResults()">${typeOpts}</select>
         <select onchange="importedTxs[${i}].cat=this.value;importedTxs[${i}].learned=false;">${opts}</select>
         <span class="import-tx-amount ${isRefund?'income':amtClass}" style="display:flex;align-items:center;gap:2px;text-align:right;">${signBtn}${tx.amount.toLocaleString('cs-CZ')} Kč</span>
@@ -1589,6 +1612,12 @@ async function confirmImport() {
   // Learn from this import
   learnFromImport(selected);
 
+  // Disable button and show progress
+  const importBtn = document.querySelector('#importActions .btn-submit');
+  if (importBtn) { importBtn.disabled = true; importBtn.textContent = 'Ukládám…'; }
+  showImportStatus(`Ukládám ${selected.length} transakcí…`);
+  document.getElementById('importResults').style.opacity = '0.4';
+
   setLoading(true);
   let ok = 0;
   for (const tx of selected) {
@@ -1598,19 +1627,23 @@ async function confirmImport() {
       await apiAdd(newTx);
       transactions.push(newTx);
       ok++;
+      if (importBtn) importBtn.textContent = `Ukládám… ${ok}/${selected.length}`;
     } catch(e) {
       console.error('import add failed:', e);
     }
   }
   setLoading(false);
+
   if (ok > 0) {
-    // Přepni na rok první importované transakce
     const firstDate = selected[0].date;
     if (firstDate) selectedYear = new Date(firstDate).getFullYear();
     selectedMonth = -1;
     buildMonthPills();
   }
-  closeImport();
+
+  // Zavři okno a zobraz výsledek
+  document.getElementById('importOverlay').classList.remove('open');
+  resetImport();
   render();
   if (ok > 0) showError(`✓ Importováno ${ok} transakcí`);
 }
