@@ -159,7 +159,35 @@ header { background:var(--surface); border-bottom:1px solid var(--border); paddi
 .cat-add-btn { background:var(--accent); border:none; color:#fff; font-family:'Syne',sans-serif; font-weight:700; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; padding:7px 12px; border-radius:8px; cursor:pointer; transition:opacity 0.15s; white-space:nowrap; }
 .cat-add-btn:hover { opacity:0.85; }
 
-.lc-type-btn { padding:5px 10px; background:none; border:none; border-right:1px solid var(--border); cursor:pointer; font-family:'Syne',sans-serif; font-weight:700; font-size:10px; letter-spacing:0.06em; text-transform:uppercase; color:var(--muted); transition:all 0.15s; white-space:nowrap; }
+.btn-import { background:none; border:1px solid var(--border); color:var(--muted); font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:11px; letter-spacing:0.08em; text-transform:uppercase; padding:7px 14px; cursor:pointer; border-radius:8px; transition:all 0.15s; white-space:nowrap; margin-right:8px; }
+.btn-import:hover { border-color:var(--accent); color:var(--accent); background:var(--accent-light); }
+
+/* ── IMPORT MODAL ── */
+.import-overlay { position:fixed; inset:0; background:rgba(26,20,10,0.45); z-index:500; display:flex; align-items:center; justify-content:center; opacity:0; pointer-events:none; transition:opacity 0.2s; }
+.import-overlay.open { opacity:1; pointer-events:all; }
+.import-modal { background:var(--surface); border:1px solid var(--border); border-radius:16px; width:480px; max-width:95vw; box-shadow:0 16px 48px rgba(26,20,10,0.18); transform:translateY(12px); transition:transform 0.2s; }
+.import-overlay.open .import-modal { transform:translateY(0); }
+.import-modal-header { padding:14px 20px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+.import-modal-title { font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:13px; }
+.import-modal-body { padding:20px; display:flex; flex-direction:column; gap:14px; }
+.import-drop { border:2px dashed var(--border); border-radius:10px; padding:32px; text-align:center; cursor:pointer; transition:all 0.15s; }
+.import-drop:hover, .import-drop.drag { border-color:var(--accent); background:var(--accent-light); }
+.import-drop-icon { font-size:28px; margin-bottom:8px; }
+.import-drop-text { font-size:12px; color:var(--muted); }
+.import-drop-text strong { color:var(--accent); cursor:pointer; }
+.import-results { display:flex; flex-direction:column; gap:6px; max-height:320px; overflow-y:auto; }
+.import-tx-row { display:flex; align-items:center; gap:10px; padding:8px 10px; border:1px solid var(--border); border-radius:8px; font-size:11px; }
+.import-tx-row select { font-family:'Plus Jakarta Sans',sans-serif; font-size:11px; border:1px solid var(--border); border-radius:6px; padding:3px 6px; background:var(--surface2); color:var(--text); outline:none; cursor:pointer; }
+.import-tx-row select:focus { border-color:var(--accent); }
+.import-tx-check { width:16px; height:16px; cursor:pointer; flex-shrink:0; accent-color:var(--accent); }
+.import-tx-desc { flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.import-tx-amount { font-weight:600; white-space:nowrap; flex-shrink:0; }
+.import-tx-amount.income { color:var(--green); }
+.import-tx-amount.expense { color:var(--red); }
+.import-status { font-size:12px; color:var(--muted); text-align:center; padding:8px; }
+.import-status.error { color:var(--red); }
+
+
 .lc-type-btn:last-child { border-right:none; }
 .lc-type-btn.active.income  { background:var(--green-bg); color:var(--green); }
 .lc-type-btn.active.expense { background:var(--red-bg); color:var(--red); }
@@ -196,6 +224,9 @@ header { background:var(--surface); border-bottom:1px solid var(--border); paddi
     <button class="nav-btn" onclick="changeYear(1)">→</button>
   </div>
   <div class="month-pills" id="monthPills"></div>
+  <div class="add-wrap">
+    <button class="btn-import" onclick="toggleImport()" id="btnImport">⬆ Import výpisu</button>
+  </div>
   <div class="add-wrap">
     <button class="btn-add" id="btnAdd" onclick="toggleDropdown()">
       + Přidat <span class="chev">▼</span>
@@ -246,6 +277,32 @@ header { background:var(--surface); border-bottom:1px solid var(--border); paddi
     </div>
   </div>
 </header>
+
+<!-- IMPORT MODAL -->
+<div class="import-overlay" id="importOverlay" onclick="if(event.target===this)closeImport()">
+  <div class="import-modal">
+    <div class="import-modal-header">
+      <span class="import-modal-title">Import bankovního výpisu</span>
+      <button class="dd-close" onclick="closeImport()">×</button>
+    </div>
+    <div class="import-modal-body" id="importBody">
+      <div class="import-drop" id="importDrop" onclick="document.getElementById('importFile').click()"
+        ondragover="event.preventDefault();this.classList.add('drag')"
+        ondragleave="this.classList.remove('drag')"
+        ondrop="event.preventDefault();this.classList.remove('drag');handleImportFile(event.dataTransfer.files[0])">
+        <div class="import-drop-icon">📄</div>
+        <div class="import-drop-text">Přetáhni PDF nebo CSV výpis sem nebo <strong>vyber soubor</strong></div>
+        <div class="import-drop-text" style="margin-top:4px;font-size:10px;">Podporované formáty: PDF, CSV · Banky: Moneta, ČSOB, Fio, KB, ČS…</div>
+      </div>
+      <input type="file" id="importFile" accept=".pdf,.csv" style="display:none" onchange="handleImportFile(this.files[0])">
+      <div id="importStatus" class="import-status" style="display:none"></div>
+      <div id="importResults" class="import-results" style="display:none"></div>
+      <div id="importActions" style="display:none;display:none;gap:8px;justify-content:flex-end;">
+        <button class="btn-submit" style="width:auto;padding:9px 20px;" onclick="confirmImport()">Importovat vybrané</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <div id="barTip" style="position:fixed;display:none;padding:4px 10px;border-radius:3px;font-size:11px;font-weight:600;color:#fff;pointer-events:none;z-index:9999;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,0.18);"></div>
 <div class="layout">
@@ -1239,6 +1296,154 @@ async function init() {
   });
 
   render();
+}
+
+
+// ── IMPORT ───────────────────────────────────────────────
+let importedTxs = [];
+
+function toggleImport() {
+  document.getElementById('importOverlay').classList.toggle('open');
+}
+
+function closeImport() {
+  document.getElementById('importOverlay').classList.remove('open');
+  resetImport();
+}
+
+function resetImport() {
+  importedTxs = [];
+  document.getElementById('importStatus').style.display = 'none';
+  document.getElementById('importResults').style.display = 'none';
+  document.getElementById('importActions').style.display = 'none';
+  document.getElementById('importDrop').style.display = 'block';
+  document.getElementById('importFile').value = '';
+}
+
+async function handleImportFile(file) {
+  if (!file) return;
+  const isPdf = file.type === 'application/pdf' || file.name.endsWith('.pdf');
+  const isCsv = file.type === 'text/csv' || file.name.endsWith('.csv');
+  if (!isPdf && !isCsv) {
+    showImportStatus('Prosím nahraj PDF nebo CSV soubor.', true);
+    return;
+  }
+  document.getElementById('importDrop').style.display = 'none';
+  showImportStatus('Kategorizuji transakce pomocí AI…');
+
+  const catList = JSON.stringify(CATEGORIES);
+  const prompt = `Jsi asistent pro kategorizaci bankovních transakcí. Z přiloženého souboru extrahuj všechny transakce a přiřaď každé kategorii z tohoto seznamu:
+${catList}
+
+Pravidla:
+- Kladné částky (kreditní obrat / přijatá platba) = type "income"
+- Záporné částky (debetní obrat / odchozí platba) = type "expense"
+- Pokud vypadá jako přesun na spořicí/investiční účet = type "savings"
+- amount je vždy kladné číslo
+- date ve formátu YYYY-MM-DD
+- desc: stručný popis transakce (max 60 znaků)
+- cat: vyber nejlepší kategorii ze seznamu výše, musí přesně odpovídat
+
+Vrať POUZE JSON array, bez markdown, bez komentářů:
+[{"date":"2026-01-02","desc":"Popis","amount":1234,"type":"expense","cat":"Bydlení"}, ...]`;
+
+  try {
+    let messageContent;
+    if (isPdf) {
+      const base64 = await new Promise((res, rej) => {
+        const r = new FileReader();
+        r.onload = () => res(r.result.split(',')[1]);
+        r.onerror = () => rej(new Error('Chyba čtení souboru'));
+        r.readAsDataURL(file);
+      });
+      messageContent = [
+        { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64 } },
+        { type: 'text', text: prompt }
+      ];
+    } else {
+      const csvText = await new Promise((res, rej) => {
+        const r = new FileReader();
+        r.onload = () => res(r.result);
+        r.onerror = () => rej(new Error('Chyba čtení souboru'));
+        r.readAsText(file, 'UTF-8');
+      });
+      messageContent = [
+        { type: 'text', text: `${prompt}\n\nObsah CSV souboru:\n\`\`\`\n${csvText}\n\`\`\`` }
+      ];
+    }
+
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 4000,
+        messages: [{ role: 'user', content: messageContent }]
+      })
+    });
+    const data = await res.json();
+    const text = data.content?.map(b => b.text || '').join('') || '';
+    const clean = text.replace(/```json|```/g, '').trim();
+    importedTxs = JSON.parse(clean);
+    renderImportResults();
+  } catch(e) {
+    showImportStatus('Chyba při zpracování: ' + e.message, true);
+    document.getElementById('importDrop').style.display = 'block';
+  }
+}
+
+function showImportStatus(msg, isError = false) {
+  const el = document.getElementById('importStatus');
+  el.textContent = msg;
+  el.className = 'import-status' + (isError ? ' error' : '');
+  el.style.display = 'block';
+}
+
+function renderImportResults() {
+  document.getElementById('importStatus').style.display = 'none';
+  const el = document.getElementById('importResults');
+  el.style.display = 'flex';
+  const actEl = document.getElementById('importActions');
+  actEl.style.display = 'flex';
+
+  el.innerHTML = `<div style="font-size:11px;color:var(--muted);margin-bottom:4px;">Nalezeno ${importedTxs.length} transakcí — zkontroluj a uprav kategorie:</div>` +
+    importedTxs.map((tx, i) => {
+      const cats = CATEGORIES[tx.type] || [];
+      const opts = cats.map(c => `<option value="${c}"${c===tx.cat?' selected':''}>${c}</option>`).join('');
+      const typeOpts = ['income','expense','savings'].map(t => `<option value="${t}"${t===tx.type?' selected':''}>${t==='income'?'↑ Příjem':t==='expense'?'↓ Výdaj':'⬡ Úspory'}</option>`).join('');
+      const amtClass = tx.type === 'income' ? 'income' : tx.type === 'savings' ? 'savings' : 'expense';
+      const sign = tx.type === 'income' ? '+' : tx.type === 'savings' ? '⬡' : '−';
+      return `<div class="import-tx-row">
+        <input type="checkbox" class="import-tx-check" checked data-idx="${i}">
+        <div class="import-tx-desc" title="${tx.desc}">${tx.date.slice(5)} · ${tx.desc}</div>
+        <select onchange="importedTxs[${i}].type=this.value;renderImportResults()" style="font-size:10px;padding:2px 4px;">${typeOpts}</select>
+        <select onchange="importedTxs[${i}].cat=this.value" style="font-size:10px;padding:2px 4px;">${opts}</select>
+        <div class="import-tx-amount ${amtClass}">${sign}${tx.amount.toLocaleString('cs-CZ')} Kč</div>
+      </div>`;
+    }).join('');
+}
+
+async function confirmImport() {
+  const checks = document.querySelectorAll('.import-tx-check');
+  const selected = importedTxs.filter((_, i) => checks[i]?.checked);
+  if (!selected.length) { showImportStatus('Nevybral jsi žádné transakce.', true); return; }
+
+  setLoading(true);
+  let ok = 0;
+  for (const tx of selected) {
+    const newTx = { id: String(Date.now() + Math.random()), type: tx.type, desc: tx.desc, amount: Number(tx.amount), cat: tx.cat, date: tx.date };
+    try {
+      await apiAdd(newTx);
+      transactions.push(newTx);
+      ok++;
+    } catch(e) {
+      console.error('import add failed:', e);
+    }
+  }
+  setLoading(false);
+  closeImport();
+  render();
+  showError(`✓ Importováno ${ok} transakcí`);
 }
 
 init();
