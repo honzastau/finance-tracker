@@ -861,22 +861,11 @@ function renderLineChart() {
     return `<text x="${x.toFixed(1)}" y="${(H-6).toFixed(1)}" text-anchor="middle" fill="${isActive?'var(--accent)':'var(--muted)'}" font-size="8" font-weight="${isActive?'700':'400'}" font-family="Bricolage Grotesque,sans-serif" text-transform="uppercase">${m}</text>`;
   }).join('');
 
-  const valsJson = encodeURIComponent(JSON.stringify(vals));
-  const monthsJson = encodeURIComponent(JSON.stringify(MONTHS_SHORT));
-
-  const hitAreas = points.map((p,i) => {
-    const x0 = i===0 ? PAD.left : (points[i-1].x + p.x)/2;
-    const x1 = i===11 ? PAD.left+innerW : (p.x + points[i+1].x)/2;
-    return `<rect x="${x0.toFixed(1)}" y="${PAD.top}" width="${(x1-x0).toFixed(1)}" height="${innerH}" fill="transparent"
-      onmouseenter="showLcTip(event,${i},'${valsJson}','${monthsJson}','${colorSolid}')"
-      onmouseleave="hideLcTip()"/>`;
-  }).join('');
-
   const crosshair = `<line id="lcCross" x1="0" y1="${PAD.top}" x2="0" y2="${PAD.top+innerH}" stroke="var(--muted)" stroke-width="1" stroke-dasharray="3,3" opacity="0" pointer-events="none"/>`;
-
   const visibleDots = points.map((p,i) =>
-    `<circle id="lcdot${i}" cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3" fill="${p.v>0?colorSolid:'var(--border)'}" pointer-events="none"/>`
+    `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3" fill="${p.v>0?colorSolid:'var(--border)'}" pointer-events="none"/>`
   ).join('');
+  const hitRect = `<rect id="lcHitRect" x="${PAD.left}" y="${PAD.top}" width="${innerW}" height="${innerH}" fill="transparent"/>`;
 
   const gradId = 'lcGrad_' + lcType;
   svg.setAttribute('width', W);
@@ -895,41 +884,45 @@ function renderLineChart() {
     ${yLabels}
     ${xLabels}
     ${crosshair}
-    ${hitAreas}
+    ${hitRect}
   `;
+
+  // Attach mousemove listener directly — no inline handlers
+  const hitEl = svg.getElementById ? svg.getElementById('lcHitRect') : svg.querySelector('#lcHitRect');
+  if (hitEl) {
+    hitEl.addEventListener('mousemove', function(e) {
+      const svgRect = svg.getBoundingClientRect();
+      const mouseX = (e.clientX - svgRect.left) * (W / svgRect.width);
+      // Find nearest point
+      let nearest = 0;
+      let minDist = Infinity;
+      points.forEach((p, i) => { const d = Math.abs(p.x - mouseX); if (d < minDist) { minDist = d; nearest = i; } });
+      showLcTipDirect(e, nearest, vals, MONTHS_SHORT, colorSolid);
+      // Move crosshair
+      const cross = svg.querySelector('#lcCross');
+      if (cross) { cross.setAttribute('x1', (PAD.left + (mouseX - PAD.left)).toFixed(1)); cross.setAttribute('x2', (PAD.left + (mouseX - PAD.left)).toFixed(1)); cross.setAttribute('opacity', '0.6'); }
+    });
+    hitEl.addEventListener('mouseleave', hideLcTip);
+  }
 }
 
 (function() {
   const tip = document.createElement('div');
   tip.id = 'lcTip';
-  tip.style.cssText = 'position:fixed;display:none;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 14px;font-family:Plus Jakarta Sans,sans-serif;font-size:11px;color:var(--text);pointer-events:none;z-index:9999;box-shadow:0 4px 16px rgba(42,34,24,0.14);min-width:130px;';
+  tip.style.cssText = 'position:fixed;display:none;padding:4px 10px;border-radius:3px;font-size:11px;font-weight:600;color:#fff;pointer-events:none;z-index:9999;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,0.18);';
   document.body.appendChild(tip);
 })();
 
-function showLcTip(event, idx, valsEncoded, monthsEncoded, color) {
-  const vals = JSON.parse(decodeURIComponent(valsEncoded));
-  const months = JSON.parse(decodeURIComponent(monthsEncoded));
+function showLcTipDirect(event, idx, vals, months, color) {
   const tip = document.getElementById('lcTip');
-  tip.innerHTML = vals.map((v, i) => {
-    const active = i === idx;
-    const dot = `<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${active ? color : 'var(--border)'};margin-right:6px;flex-shrink:0;"></span>`;
-    return `<div style="display:flex;align-items:center;justify-content:space-between;gap:14px;line-height:1.8;${active ? `font-weight:700;color:${color};` : 'color:var(--muted);'}">${dot}<span style="flex:1">${months[i]}</span><span>${v > 0 ? v.toLocaleString('cs-CZ') + ' Kč' : '—'}</span></div>`;
-  }).join('');
+  const v = vals[idx];
+  tip.textContent = v > 0 ? v.toLocaleString('cs-CZ') + ' Kč' : '—';
+  tip.style.background = color;
   tip.style.display = 'block';
-  const tipW = 160;
-  let x = event.clientX + 16;
-  let y = event.clientY - tip.offsetHeight / 2;
-  if (x + tipW > window.innerWidth - 8) x = event.clientX - tipW - 8;
-  if (y < 8) y = 8;
+  const x = event.clientX + 12;
+  const y = event.clientY - 16;
   tip.style.left = x + 'px';
   tip.style.top  = y + 'px';
-  const cross = document.getElementById('lcCross');
-  if (cross) {
-    const svgRect = document.getElementById('lineChart').getBoundingClientRect();
-    const svgX = event.clientX - svgRect.left;
-    cross.setAttribute('x1', svgX); cross.setAttribute('x2', svgX);
-    cross.setAttribute('opacity', '0.6');
-  }
 }
 
 function hideLcTip() {
