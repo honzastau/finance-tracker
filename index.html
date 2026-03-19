@@ -246,14 +246,10 @@ header { background:var(--surface); border-bottom:1px solid var(--border); paddi
         </div>
         <input  class="finput"  id="descInput"   type="text"   placeholder="Popis transakce...">
         <div class="form-row">
-          <input  class="finput"  id="amountInput" type="number" placeholder="Částka" min="0.01" step="0.01">
+          <input  class="finput"  id="amountInput" type="number" placeholder="Částka" min="0" step="0.01">
           <select class="fselect" id="catSelect"></select>
         </div>
         <input  class="finput"  id="dateInput" type="date">
-        <div id="refundRow" style="display:none;align-items:center;gap:8px;padding:2px 0;">
-          <input type="checkbox" id="refundCheck" style="width:15px;height:15px;cursor:pointer;accent-color:var(--green);">
-          <label for="refundCheck" style="font-size:12px;color:var(--muted);cursor:pointer;user-select:none;">Odečíst od výdajů <span style="color:var(--green)">(vrácení / sdílení útraty)</span></label>
-        </div>
         <button class="btn-submit" onclick="addTransaction()">Přidat transakci</button>
       </div>
     </div>
@@ -532,8 +528,6 @@ function toggleDropdown() {
 function closeDropdown() {
   document.getElementById('addDropdown').classList.remove('open');
   document.getElementById('btnAdd').classList.remove('open');
-  const rc = document.getElementById('refundCheck');
-  if (rc) rc.checked = false;
 }
 document.addEventListener('click', e => {
   if (!document.querySelector('.add-wrap').contains(e.target)) closeDropdown();
@@ -546,9 +540,6 @@ function setType(t) {
   ['income','expense','savings'].forEach(x => {
     document.getElementById('btn' + x.charAt(0).toUpperCase() + x.slice(1)).classList.toggle('active', x===t);
   });
-  // Zobraz/skryj refund checkbox
-  const refundRow = document.getElementById('refundRow');
-  if (refundRow) refundRow.style.display = t === 'expense' ? 'flex' : 'none';
   updateCatSelect();
 }
 function updateCatSelect() {
@@ -559,17 +550,15 @@ async function addTransaction() {
   const dEl = document.getElementById('descInput');
   const aEl = document.getElementById('amountInput');
   const desc   = dEl.value.trim();
-  const amount = parseFloat(aEl.value.replace(',', '.'));
+  const amount = parseFloat(aEl.value);
   const cat    = document.getElementById('catSelect').value;
   const date   = document.getElementById('dateInput').value;
-  const isRefund = currentType === 'expense' && document.getElementById('refundCheck')?.checked;
   dEl.classList.remove('error'); aEl.classList.remove('error');
-  if (!desc) dEl.classList.add('error');
-  if (isNaN(amount) || amount <= 0) aEl.classList.add('error');
-  if (!desc || isNaN(amount) || amount <= 0) return;
+  if (!desc)               dEl.classList.add('error');
+  if (!amount || amount<=0) aEl.classList.add('error');
+  if (!desc || !amount || amount<=0) return;
 
-  const finalAmount = isRefund ? -amount : amount;
-  const tx = { id: String(Date.now()), type: currentType, desc, amount: finalAmount, cat, date };
+  const tx = { id: String(Date.now()), type: currentType, desc, amount, cat, date };
   const txDate = new Date(date);
   selectedYear  = txDate.getFullYear();
   selectedMonth = txDate.getMonth();
@@ -1170,24 +1159,24 @@ function renderTxList() {
     return;
   }
 
-  const sign = t => t.type==='income' ? '+' : t.type==='savings' ? '⬡' : t.amount < 0 ? '+' : '−';
   const fmtDate = d => new Date(d).toLocaleDateString('cs-CZ',{day:'numeric',month:'short'});
 
   el.innerHTML = filtered.map(t => {
     const cats = CATEGORIES[t.type] || [];
     const opts = cats.map(c => `<option value="${c}"${c===t.cat?' selected':''}>${c}</option>`).join('');
+    const sign = t.type==='income' ? '+' : t.type==='savings' ? '⬡' : '−';
     return `
     <div class="tx-row">
       <div class="tx-icon">${ICONS[t.cat]||'•'}</div>
       <div style="flex:1;min-width:0">
         <div class="tx-desc">${t.desc}</div>
         <div class="tx-cat">
-          <select class="tx-cat-select" data-id="${String(t.id)}" onchange="console.log('SELECT CHANGED',this.value);saveTxCat(this.dataset.id, this.value)">${opts}</select>
+          <select class="tx-cat-select" data-id="${String(t.id)}" onchange="saveTxCat(this.dataset.id, this.value)">${opts}</select>
           <span style="color:var(--muted);font-size:10px;"> · ${fmtDate(t.date)}</span>
         </div>
       </div>
       <div class="tx-right">
-        <div class="tx-amount ${t.type}${t.type==='expense' && t.amount<0?' income':''}">${sign(t)}${Math.abs(t.amount).toLocaleString('cs-CZ')} Kč</div>
+        <div class="tx-amount ${t.type}">${sign}${t.amount.toLocaleString('cs-CZ')} Kč</div>
         <button class="tx-del" onclick="deleteTransaction(${t.id})">×</button>
       </div>
     </div>`;
@@ -1567,17 +1556,29 @@ function renderImportResults() {
       const opts = cats.map(c => `<option value="${c}"${c===tx.cat?' selected':''}>${c}</option>`).join('');
       const typeOpts = ['income','expense','savings'].map(t => `<option value="${t}"${t===tx.type?' selected':''}>${t==='income'?'↑ Příjem':t==='expense'?'↓ Výdaj':'⬡ Úspory'}</option>`).join('');
       const amtClass = tx.type === 'income' ? 'income' : tx.type === 'savings' ? 'savings' : 'expense';
-      const sign = tx.type === 'income' ? '+' : tx.type === 'savings' ? '⬡' : '−';
+      const isRefund = tx.type === 'expense' && tx.refund;
+      const signLabel = tx.type === 'income' ? '+' : tx.type === 'savings' ? '⬡' : isRefund ? '+' : '−';
+      const signColor = isRefund ? 'var(--green)' : tx.type === 'income' ? 'var(--green)' : tx.type === 'savings' ? 'var(--blue)' : 'var(--red)';
+      const signTitle = tx.type === 'expense' ? (isRefund ? 'Klikni pro výdaj' : 'Klikni pro vrácení') : '';
+      const signBtn = tx.type === 'expense'
+        ? `<button onclick="toggleImportSign(${i})" title="${signTitle}" style="background:none;border:none;cursor:pointer;font-weight:700;font-size:13px;color:${signColor};padding:0 4px;border-bottom:1px dashed ${signColor};line-height:1;">${signLabel}</button>`
+        : `<span style="font-weight:700;font-size:13px;color:${signColor};padding:0 4px;">${signLabel}</span>`;
       const learnedDot = tx.learned ? `<span title="Rozpoznáno z předchozího importu" style="color:var(--accent);font-size:10px;">✓</span>` : `<span></span>`;
       return `<div class="import-tx-row">
         <input type="checkbox" class="import-tx-check" checked data-idx="${i}">
         <span style="color:var(--muted);white-space:nowrap;">${tx.date.slice(5)}</span>
         <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${tx.desc}">${tx.desc}${tx.cpDisplay ? `<span style="color:var(--muted);font-size:10px;"> · ${tx.cpDisplay}</span>` : ''}</span>
-        <select onchange="importedTxs[${i}].type=this.value;importedTxs[${i}].learned=false;renderImportResults()">${typeOpts}</select>
+        <select onchange="importedTxs[${i}].type=this.value;importedTxs[${i}].learned=false;importedTxs[${i}].refund=false;renderImportResults()">${typeOpts}</select>
         <select onchange="importedTxs[${i}].cat=this.value;importedTxs[${i}].learned=false;">${opts}</select>
-        <span class="import-tx-amount ${amtClass}" style="text-align:right;">${sign}${tx.amount.toLocaleString('cs-CZ')} Kč</span>
+        <span class="import-tx-amount ${isRefund?'income':amtClass}" style="display:flex;align-items:center;gap:2px;text-align:right;">${signBtn}${tx.amount.toLocaleString('cs-CZ')} Kč</span>
       </div>`;
     }).join('');
+}
+
+function toggleImportSign(i) {
+  if (importedTxs[i].type !== 'expense') return;
+  importedTxs[i].refund = !importedTxs[i].refund;
+  renderImportResults();
 }
 
 async function confirmImport() {
@@ -1591,7 +1592,8 @@ async function confirmImport() {
   setLoading(true);
   let ok = 0;
   for (const tx of selected) {
-    const newTx = { id: String(Date.now() + Math.random()), type: tx.type, desc: tx.desc, amount: Number(tx.amount), cat: tx.cat, date: tx.date };
+    const finalAmount = tx.type === 'expense' && tx.refund ? -tx.amount : tx.amount;
+    const newTx = { id: String(Date.now() + Math.random()), type: tx.type, desc: tx.desc, amount: finalAmount, cat: tx.cat, date: tx.date };
     try {
       await apiAdd(newTx);
       transactions.push(newTx);
