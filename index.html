@@ -1627,9 +1627,16 @@ async function confirmImport() {
     }
   }
   setLoading(false);
+  if (ok > 0) {
+    // Přepni na rok první importované transakce
+    const firstDate = selected[0].date;
+    if (firstDate) selectedYear = new Date(firstDate).getFullYear();
+    selectedMonth = -1;
+    buildMonthPills();
+  }
   closeImport();
   render();
-  showError(`✓ Importováno ${ok} transakcí`);
+  if (ok > 0) showError(`✓ Importováno ${ok} transakcí`);
 }
 
 init();
