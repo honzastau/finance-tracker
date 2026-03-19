@@ -232,6 +232,11 @@ header { background:var(--surface); border-bottom:1px solid var(--border); paddi
     <div class="year-label" id="yearLabel">2025</div>
     <button class="nav-btn" onclick="changeYear(1)">→</button>
   </div>
+  <div class="year-nav" style="border-right:none;padding-right:0;margin-right:8px;">
+    <button class="nav-btn" onclick="changeMonth(-1)">←</button>
+    <div class="year-label" id="monthLabel" style="min-width:52px;font-size:12px;"></div>
+    <button class="nav-btn" onclick="changeMonth(1)">→</button>
+  </div>
   <div class="month-pills" id="monthPills"></div>
   <div class="add-wrap">
     <button class="btn-import" onclick="toggleImport()" id="btnImport">⬆ Import výpisu</button>
@@ -425,7 +430,7 @@ header { background:var(--surface); border-bottom:1px solid var(--border); paddi
 
 <script>
 // ── HESLO ─────────────────────────────────────────────────
-const APP_PASSWORD = '0411';
+const APP_PASSWORD = 'ZMENTE_HESLO_ZDE';
 
 (function() {
   if (sessionStorage.getItem('ft_auth') === APP_PASSWORD) return;
@@ -545,10 +550,26 @@ function showError(msg) {
 
 // ── PERIOD ───────────────────────────────────────────────
 function changeYear(d) { selectedYear += d; buildMonthPills(); render(); }
+
+function changeMonth(d) {
+  if (selectedMonth === -1) {
+    // z "celý rok" přejdi na první/poslední měsíc
+    selectedMonth = d > 0 ? 0 : 11;
+  } else {
+    selectedMonth += d;
+    if (selectedMonth < 0) { selectedMonth = 11; selectedYear--; }
+    if (selectedMonth > 11) { selectedMonth = 0; selectedYear++; }
+  }
+  buildMonthPills();
+  render();
+}
+
 function selectMonth(m) { selectedMonth = m; buildMonthPills(); render(); }
 
 function buildMonthPills() {
   document.getElementById('yearLabel').textContent = selectedYear;
+  const ml = document.getElementById('monthLabel');
+  if (ml) ml.textContent = selectedMonth === -1 ? 'Vše' : MONTHS_SHORT[selectedMonth];
   document.getElementById('monthPills').innerHTML =
     `<button class="mpill year-all ${selectedMonth===-1?'active':''}" onclick="selectMonth(-1)">Celý rok</button>` +
     MONTHS_SHORT.map((m,i) => `<button class="mpill ${selectedMonth===i?'active':''}" onclick="selectMonth(${i})">${m}</button>`).join('');
