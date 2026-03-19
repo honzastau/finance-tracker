@@ -1392,7 +1392,7 @@ function parseCsv(text, filename) {
   const isMoneta  = h.includes('iban') && h.includes('zpráva pro příjemce');
 
   // Vlastní účty — převody mezi nimi se filtrují
-  const OWN_ACCOUNTS = ['1319720004', '216228979', '258320693', '1319763004', '531533', '520655'];
+  const OWN_ACCOUNTS = ['1319720004', '216228979', '258320693', '1319763004', '531533', '520655', '1101083110'];
 
   function isInternalTransfer(row) {
     const d = (row.desc || '').toLowerCase();
