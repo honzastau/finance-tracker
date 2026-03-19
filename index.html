@@ -418,7 +418,7 @@ header { background:var(--surface); border-bottom:1px solid var(--border); paddi
 
 <script>
 // ── HESLO ─────────────────────────────────────────────────
-const APP_PASSWORD = '0411';
+const APP_PASSWORD = 'ZMENTE_HESLO_ZDE';
 
 (function() {
   const stored = sessionStorage.getItem('ft_auth');
@@ -1343,8 +1343,8 @@ async function handleImportFile(file) {
       });
       const rows = parseCsv(text, file.name);
       if (!rows.length) { showImportStatus('Nenalezeny žádné transakce.', true); document.getElementById('importDrop').style.display='block'; return; }
-      showImportStatus(`Kategorizuji ${rows.length} transakcí pomocí AI…`);
-      importedTxs = await categorizeTxs(rows);
+      showImportStatus(`Kategorizuji ${rows.length} transakcí…`);
+      importedTxs = applyImportMemory(await categorizeTxs(rows));
       renderImportResults();
     } else {
       // PDF — pošli celý soubor AI
@@ -1429,37 +1429,42 @@ function parseCsv(text, filename) {
     const f = parseRow(lines[i]);
     const get = (col) => (f[headers.findIndex(x => x === col)] || '').trim();
 
-    let date, desc, amount, counterpart;
+    let date, desc, amount, counterpart, counterpartName;
 
     if (isKartaCS) {
       date = parseDate(get('Datum transakce'));
       amount = parseAmount(get('Zaúčtovaná částka'));
       desc = get('Název Obchodníka') || get('Popis/Místo transakce') || get('Typ transakce');
       counterpart = '';
+      counterpartName = get('Název Obchodníka') || get('Město') || '';
     } else if (isBeznyCS) {
       date = parseDate(get('Datum provedení'));
       amount = parseAmount(get('Zaúčtovaná částka'));
       desc = get('Zpráva') || get('Poznámka') || get('Název protiúčtu') || get('Typ transakce');
       counterpart = get('Číslo protiúčtu');
+      counterpartName = get('Název protiúčtu') || '';
     } else if (isMoneta) {
       date = parseDate(get('Splatnost'));
       amount = parseAmount(get('Částka'));
       desc = get('Zpráva pro příjemce') || get('Poznámka pro mě') || get('Popis platby') || get('Typ transakce');
       counterpart = get('Číslo protiúčtu');
+      counterpartName = get('Název účtu příjemce') || '';
     } else {
       date = parseDate(f[0]) || parseDate(f[1]);
       amount = parseAmount(f.find(x => x.match(/^-?[\d\s]+,\d{2}$/)) || '');
       desc = f[2] || f[3] || '';
       counterpart = '';
+      counterpartName = '';
     }
 
     if (!date || amount === null || isNaN(amount) || amount === 0) continue;
     desc = desc.replace(/^"|"$/g, '').slice(0, 80);
-    const row = { date, desc, amount, counterpart };
+    const cpDisplay = counterpartName || counterpart || '';
+    const row = { date, desc, amount, counterpart, cpDisplay };
     if (isInternalTransfer(row)) {
-      rows.push({ date, desc, amount, internal: true });
+      rows.push({ date, desc, amount, cpDisplay, internal: true });
     } else {
-      rows.push({ date, desc, amount });
+      rows.push({ date, desc, amount, cpDisplay });
     }
   }
   return rows;
@@ -1518,7 +1523,7 @@ async function categorizeTxs(rows) {
       else cat = 'Jiné';
     }
 
-    return { date: r.date, desc: r.desc, amount: Math.abs(r.amount), type, cat, internal: r.internal || false };
+    return { date: r.date, desc: r.desc, amount: Math.abs(r.amount), type, cat, internal: r.internal || false, cpDisplay: r.cpDisplay || '' };
   });
 }
 
@@ -1533,6 +1538,31 @@ function showImportStatus(msg, isError = false) {
   el.style.display = 'block';
 }
 
+// ── IMPORT LEARNING ──────────────────────────────────────
+function loadImportMemory() {
+  try { return JSON.parse(localStorage.getItem('importMemory') || '{}'); } catch { return {}; }
+}
+function saveImportMemory(mem) {
+  try { localStorage.setItem('importMemory', JSON.stringify(mem)); } catch {}
+}
+function applyImportMemory(txs) {
+  const mem = loadImportMemory();
+  return txs.map(tx => {
+    if (tx.internal) return tx;
+    const key = tx.desc.toLowerCase().trim();
+    if (mem[key]) return { ...tx, type: mem[key].type, cat: mem[key].cat, learned: true };
+    return tx;
+  });
+}
+function learnFromImport(txs) {
+  const mem = loadImportMemory();
+  txs.forEach(tx => {
+    const key = tx.desc.toLowerCase().trim();
+    mem[key] = { type: tx.type, cat: tx.cat };
+  });
+  saveImportMemory(mem);
+}
+
 function renderImportResults() {
   document.getElementById('importStatus').style.display = 'none';
   const el = document.getElementById('importResults');
@@ -1542,17 +1572,20 @@ function renderImportResults() {
 
   const normal = importedTxs.filter(tx => !tx.internal);
   const internal = importedTxs.filter(tx => tx.internal);
+  const learned = normal.filter(tx => tx.learned).length;
 
-  el.innerHTML = `<div style="font-size:11px;color:var(--muted);margin-bottom:4px;">Nalezeno ${normal.length} transakcí k importu${internal.length ? `, ${internal.length} přesunů mezi vlastními účty` : ''}:</div>` +
+  el.innerHTML = `<div style="font-size:11px;color:var(--muted);margin-bottom:4px;">
+    Nalezeno <strong>${normal.length}</strong> transakcí k importu${learned ? ` · <span style="color:var(--accent)">✓ ${learned} rozpoznáno z předchozích importů</span>` : ''}${internal.length ? ` · ${internal.length} přesunů mezi účty` : ''}:
+  </div>` +
     importedTxs.map((tx, i) => {
       if (tx.internal) {
         const sign = tx.amount >= 0 ? '+' : '−';
-        const amtColor = tx.amount >= 0 ? 'color:var(--muted)' : 'color:var(--muted)';
         return `<div class="import-tx-row" style="opacity:0.45;background:var(--surface2);">
           <input type="checkbox" class="import-tx-check" disabled data-idx="${i}">
           <span style="color:var(--muted);white-space:nowrap;">${tx.date.slice(5)}</span>
           <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted);" title="${tx.desc}">${tx.desc}</span>
-          <span style="font-size:10px;color:var(--muted);grid-column:span 2;font-style:italic;">↔ přesun mezi vlastními účty</span>
+          <span style="font-size:10px;color:var(--muted);font-style:italic;white-space:nowrap;">↔ vlastní účty</span>
+          <span style="color:var(--muted);font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${tx.cpDisplay || ''}</span>
           <span style="text-align:right;color:var(--muted);white-space:nowrap;">${sign}${tx.amount.toLocaleString('cs-CZ')} Kč</span>
         </div>`;
       }
@@ -1561,12 +1594,13 @@ function renderImportResults() {
       const typeOpts = ['income','expense','savings'].map(t => `<option value="${t}"${t===tx.type?' selected':''}>${t==='income'?'↑ Příjem':t==='expense'?'↓ Výdaj':'⬡ Úspory'}</option>`).join('');
       const amtClass = tx.type === 'income' ? 'income' : tx.type === 'savings' ? 'savings' : 'expense';
       const sign = tx.type === 'income' ? '+' : tx.type === 'savings' ? '⬡' : '−';
+      const learnedDot = tx.learned ? `<span title="Rozpoznáno z předchozího importu" style="color:var(--accent);font-size:10px;">✓</span>` : `<span></span>`;
       return `<div class="import-tx-row">
         <input type="checkbox" class="import-tx-check" checked data-idx="${i}">
         <span style="color:var(--muted);white-space:nowrap;">${tx.date.slice(5)}</span>
-        <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${tx.desc}">${tx.desc}</span>
-        <select onchange="importedTxs[${i}].type=this.value;renderImportResults()">${typeOpts}</select>
-        <select onchange="importedTxs[${i}].cat=this.value">${opts}</select>
+        <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${tx.desc}">${tx.desc}${tx.cpDisplay ? `<span style="color:var(--muted);font-size:10px;"> · ${tx.cpDisplay}</span>` : ''}</span>
+        <select onchange="importedTxs[${i}].type=this.value;importedTxs[${i}].learned=false;renderImportResults()">${typeOpts}</select>
+        <select onchange="importedTxs[${i}].cat=this.value;importedTxs[${i}].learned=false;">${opts}</select>
         <span class="import-tx-amount ${amtClass}" style="text-align:right;">${sign}${tx.amount.toLocaleString('cs-CZ')} Kč</span>
       </div>`;
     }).join('');
@@ -1576,6 +1610,9 @@ async function confirmImport() {
   const checks = document.querySelectorAll('.import-tx-check');
   const selected = importedTxs.filter((tx, i) => !tx.internal && checks[i]?.checked);
   if (!selected.length) { showImportStatus('Nevybral jsi žádné transakce.', true); return; }
+
+  // Learn from this import
+  learnFromImport(selected);
 
   setLoading(true);
   let ok = 0;
