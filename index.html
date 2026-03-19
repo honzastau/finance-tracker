@@ -293,8 +293,8 @@ header { background:var(--surface); border-bottom:1px solid var(--border); paddi
         ondragleave="this.classList.remove('drag')"
         ondrop="event.preventDefault();this.classList.remove('drag');handleImportFile(event.dataTransfer.files[0])">
         <div class="import-drop-icon">📄</div>
-        <div class="import-drop-text">Přetáhni PDF nebo CSV výpis sem nebo <strong>vyber soubor</strong></div>
-        <div class="import-drop-text" style="margin-top:4px;font-size:10px;">Podporované formáty: PDF, CSV · Banky: Moneta, ČSOB, Fio, KB, ČS…</div>
+        <div class="import-drop-text">Přetáhni CSV výpis sem nebo <strong>vyber soubor</strong></div>
+        <div class="import-drop-text" style="margin-top:4px;font-size:10px;">Podporovaný formát: CSV · Banky: ČS (běžný účet i karta), Moneta…</div>
       </div>
       <input type="file" id="importFile" accept=".pdf,.csv" style="display:none" onchange="handleImportFile(this.files[0])">
       <div id="importStatus" class="import-status" style="display:none"></div>
@@ -418,7 +418,7 @@ header { background:var(--surface); border-bottom:1px solid var(--border); paddi
 
 <script>
 // ── HESLO ─────────────────────────────────────────────────
-const APP_PASSWORD = '0411';
+const APP_PASSWORD = 'ZMENTE_HESLO_ZDE';
 
 (function() {
   const stored = sessionStorage.getItem('ft_auth');
@@ -1443,69 +1443,64 @@ function parseCsv(text, filename) {
 }
 
 async function categorizeTxs(rows) {
-  const catList = JSON.stringify(CATEGORIES);
-  const txLines = rows.map((r, i) => `${i}: ${r.date} | ${r.amount > 0 ? '+' : ''}${r.amount} | ${r.desc}`).join('\n');
+  return rows.map(r => {
+    const d = r.desc.toLowerCase();
+    const amt = r.amount;
+    let type, cat;
 
-  const prompt = `Kategorizuj tyto bankovní transakce do kategorií z tohoto seznamu:
-${catList}
+    // Determine type
+    if (amt > 0) {
+      // Splátky kreditní karty jsou interní přesuny — přeskočíme je filtrem výše
+      if (d.includes('trading') || d.includes('t212') || d.includes('dip') || d.includes('bitcoin') || d.includes('coinbase') || d.includes('bitstamp')) {
+        type = 'savings';
+      } else {
+        type = 'income';
+      }
+    } else {
+      if (d.includes('trading') || d.includes('t212') || d.includes('dip') || d.includes('bitcoin') || d.includes('coinbase')) {
+        type = 'savings';
+      } else {
+        type = 'expense';
+      }
+    }
 
-Pravidla:
-- Kladná částka = type "income", záporná = "expense", přesun na investiční/spořicí účet = "savings"
-- amount je vždy kladné číslo (absolutní hodnota)
-- cat musí přesně odpovídat kategorii ze seznamu
+    // Determine category
+    if (type === 'savings') {
+      if (d.includes('bitcoin') || d.includes('coinbase') || d.includes('bitstamp')) cat = 'Bitcoin';
+      else if (d.includes('dip')) cat = 'DIP';
+      else if (d.includes('trading') || d.includes('t212')) cat = 'Trading212';
+      else cat = 'Jiné';
+    } else if (type === 'income') {
+      if (d.includes('jilek') || d.includes('hladil') || d.includes('pasport') || d.includes('štarha') || d.includes('starha') || d.includes('faktura') || d.includes('projekc')) cat = 'Projekční práce';
+      else if (d.includes('staveb') || d.includes('stavebn')) cat = 'Stavební práce';
+      else if (d.includes('výplat') || d.includes('mzda') || d.includes('plat')) cat = 'Zaměstnání';
+      else if (d.includes('cenný') || d.includes('divid') || d.includes('úrok')) cat = 'Příjmy z cenných papírů';
+      else cat = 'Jiné';
+    } else {
+      // expense categories
+      if (d.includes('lidl') || d.includes('globus') || d.includes('kaufland') || d.includes('albert') || d.includes('billa') || d.includes('tesco') || d.includes('penny') || d.includes('potraviny') || d.includes('coop') || d.includes('terno')) cat = 'Potraviny';
+      else if (d.includes('mcdonald') || d.includes('kfc') || d.includes('burger') || d.includes('restaur') || d.includes('kavárna') || d.includes('kavarna') || d.includes('cafe') || d.includes('café') || d.includes('pizza') || d.includes('kebab') || d.includes('sushi') || d.includes('bolt food') || d.includes('wolt') || d.includes('dáme jídlo') || d.includes('dame jidlo') || d.includes('u cap') || d.includes('u baumann') || d.includes('anoda') || d.includes('skog') || d.includes('kam restaur') || d.includes('koleje a menzy')) cat = 'Restaurace/kavárny';
+      else if (d.includes('hospoda') || d.includes('pivnice') || d.includes('bar ') || d.includes('ples') || d.includes('club') || d.includes('pub')) cat = 'Hospody/bary/plesy';
+      else if (d.includes('nájem') || d.includes('najem') || d.includes('náj') || d.includes('energie') || d.includes('elektr') || d.includes('plyn') || d.includes('voda') || d.includes('bydlen') || d.includes('správa karty') || d.includes('sprava karty')) cat = 'Bydlení';
+      else if (d.includes('ids') || d.includes('idsjmk') || d.includes('doprav') || d.includes('autobus') || d.includes('vlak') || d.includes('metro') || d.includes('taxi') || d.includes('bolt.eu') || d.includes('parking') || d.includes('easypark') || d.includes('parkov') || d.includes('shell') || d.includes('pohl') || d.includes('mol ') || d.includes('benzin') || d.includes('benzi') || d.includes('čerpac') || d.includes('cerpac') || d.includes('moto')) cat = 'Doprava';
+      else if (d.includes('cd.cz') || d.includes('české dráhy') || d.includes('ceske drahy') || d.includes('regiojet') || d.includes('flixbus') || d.includes('ryanair') || d.includes('booking') || d.includes('airbnb') || d.includes('hotel') || d.includes('letiště') || d.includes('letiste')) cat = 'Cestování';
+      else if (d.includes('netflix') || d.includes('spotify') || d.includes('apple') || d.includes('google play') || d.includes('hbo') || d.includes('disney') || d.includes('youtube') || d.includes('globdata') || d.includes('előfiz') || d.includes('předpl') || d.includes('predpl') || d.includes('streamov')) cat = 'Předplatné/média';
+      else if (d.includes('lékárna') || d.includes('lekarna') || d.includes('doktor') || d.includes('nemocnic') || d.includes('zubař') || d.includes('zubar') || d.includes('zdravot') || d.includes('geco') || d.includes('benu') || d.includes('dr.max')) cat = 'Zdravotní péče';
+      else if (d.includes('sport') || d.includes('gym') || d.includes('fitness') || d.includes('squash') || d.includes('tenis') || d.includes('bazén') || d.includes('bazen') || d.includes('relax') || d.includes('wellness') || d.includes('sauna')) cat = 'Sport/relax';
+      else if (d.includes('kino') || d.includes('divadlo') || d.includes('koncert') || d.includes('festival') || d.includes('muzeum') || d.includes('galerie') || d.includes('vstupenk')) cat = 'Koncerty/kino/divadlo';
+      else if (d.includes('daň') || d.includes('dan') || d.includes('pojišt') || d.includes('pojist') || d.includes('odvod') || d.includes('finanční úřad') || d.includes('financni urad') || d.includes('sociální') || d.includes('socialni') || d.includes('zdravotní pojišt') || d.includes('exekuc') || d.includes('ceecr')) cat = 'Odvody/daně';
+      else if (d.includes('dárek') || d.includes('darek') || d.includes('charita') || d.includes('sbírka') || d.includes('sbirka') || d.includes('dar ')) cat = 'Dárky/charita';
+      else if (d.includes('zalando') || d.includes('zara') || d.includes('h&m') || d.includes('outfit') || d.includes('oblečen') || d.includes('oblechn') || d.includes('boty') || d.includes('valmont') || d.includes('silingr') || d.includes('zásilk') || d.includes('zasilk') || d.includes('dracik') || d.includes('alza') || d.includes('czc') || d.includes('mall') || d.includes('ikea') || d.includes('obi') || d.includes('bauhaus') || d.includes('hornbach')) cat = 'Věci';
+      else if (d.includes('výplat') || d.includes('výběr') || d.includes('výplata') || d.includes('vybér') || d.includes('atm') || d.includes('bankomat') || d.includes('vklad') || d.includes('poplatek') || d.includes('správa') || d.includes('sprava') || d.includes('raiffeisen') || d.includes('portyš') || d.includes('portys') || d.includes('servis') || d.includes('lozisko')) cat = 'Výplaty+jiné výdaje';
+      else cat = 'Jiné';
+    }
 
-Transakce (index | datum | částka | popis):
-${txLines}
-
-Vrať POUZE JSON array ve stejném pořadí, bez markdown:
-[{"date":"2026-01-02","desc":"Popis","amount":1234,"type":"expense","cat":"Bydlení"}, ...]`;
-
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 4000,
-      messages: [{ role: 'user', content: prompt }]
-    })
+    return { date: r.date, desc: r.desc, amount: Math.abs(r.amount), type, cat };
   });
-  if (!res.ok) throw new Error(`API error ${res.status}`);
-  const data = await res.json();
-  const text = data.content?.map(b => b.text || '').join('') || '';
-  const clean = text.replace(/```json|```/g, '').trim();
-  return JSON.parse(clean);
 }
 
 async function categorizePdf(base64) {
-  const catList = JSON.stringify(CATEGORIES);
-  const prompt = `Z přiloženého PDF bankovního výpisu extrahuj všechny transakce a kategorizuj je do kategorií:
-${catList}
-
-Pravidla:
-- Kladná částka = type "income", záporná = "expense", přesun na investiční/spořicí účet = "savings"
-- amount vždy kladné číslo, date ve formátu YYYY-MM-DD, desc max 60 znaků
-- cat musí přesně odpovídat kategorii ze seznamu
-
-Vrať POUZE JSON array, bez markdown:
-[{"date":"2026-01-02","desc":"Popis","amount":1234,"type":"expense","cat":"Bydlení"}, ...]`;
-
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 4000,
-      messages: [{ role: 'user', content: [
-        { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64 } },
-        { type: 'text', text: prompt }
-      ]}]
-    })
-  });
-  if (!res.ok) throw new Error(`API error ${res.status}`);
-  const data = await res.json();
-  const text = data.content?.map(b => b.text || '').join('') || '';
-  const clean = text.replace(/```json|```/g, '').trim();
-  return JSON.parse(clean);
+  throw new Error('Import PDF není podporován z bezpečnostních důvodů prohlížeče. Použij prosím CSV export z internetového bankovnictví.');
 }
 
 function showImportStatus(msg, isError = false) {
