@@ -426,7 +426,7 @@ const MONTHS_SHORT = ['Led','Úno','Bře','Dub','Kvě','Čvn','Čvc','Srp','Zá�
 
 const CATEGORIES = {
   income:  ['Zaměstnání','Projekční práce','Stavební práce','Projekty JJ','Příjmy z cenných papírů','Jiné'],
-  expense: ['Bydlení','Cestování','Doprava','Dárky/charita','Hospody/bary/plesy','Jiné','Koncerty/kino/divadlo','Odvody/daně','Potraviny','Předplatné/média','Restaurace/kavárny','Sport/relax','Výplaty+jiné výdaje','Věci','Zdravotní péče'],
+  expense: ['Bydlení','Cestování','Doprava','Dárky/charita','Hospody/bary/plesy','Jiné','Koncerty/kino/divadlo','Odvody/daně','Potraviny','Předplatné/média','Restaurace/kavárny','Sport/relax','Výdaje podnikání','Věci','Zdravotní péče'],
   savings: ['Bitcoin','DIP','Trading212','Jiné']
 };
 
@@ -434,7 +434,7 @@ const ICONS = {
   'Zaměstnání':'💼','Projekční práce':'📐','Stavební práce':'🏗️','Projekty JJ':'🗂️','Příjmy z cenných papírů':'📈','Jiné':'💰',
   'Bydlení':'🏠','Cestování':'✈️','Doprava':'🚗','Dárky/charita':'🎁','Hospody/bary/plesy':'🍺',
   'Koncerty/kino/divadlo':'🎭','Odvody/daně':'🏛️','Potraviny':'🛒','Předplatné/média':'📺',
-  'Restaurace/kavárny':'🍽️','Sport/relax':'🏃','Výplaty+jiné výdaje':'💸','Věci':'🛍️','Zdravotní péče':'💊',
+  'Restaurace/kavárny':'🍽️','Sport/relax':'🏃','Výdaje podnikání':'🏢','Věci':'🛍️','Zdravotní péče':'💊',
   'Bitcoin':'₿','DIP':'🧓','Trading212':'📊','Jiné':'❓'
 };
 
@@ -1500,7 +1500,7 @@ async function categorizeTxs(rows) {
       else if (d.includes('daň') || d.includes('dan') || d.includes('pojišt') || d.includes('pojist') || d.includes('odvod') || d.includes('finanční úřad') || d.includes('financni urad') || d.includes('sociální') || d.includes('socialni') || d.includes('zdravotní pojišt') || d.includes('exekuc') || d.includes('ceecr')) cat = 'Odvody/daně';
       else if (d.includes('dárek') || d.includes('darek') || d.includes('charita') || d.includes('sbírka') || d.includes('sbirka') || d.includes('dar ')) cat = 'Dárky/charita';
       else if (d.includes('zalando') || d.includes('zara') || d.includes('h&m') || d.includes('outfit') || d.includes('oblečen') || d.includes('oblechn') || d.includes('boty') || d.includes('valmont') || d.includes('silingr') || d.includes('zásilk') || d.includes('zasilk') || d.includes('dracik') || d.includes('alza') || d.includes('czc') || d.includes('mall') || d.includes('ikea') || d.includes('obi') || d.includes('bauhaus') || d.includes('hornbach')) cat = 'Věci';
-      else if (d.includes('výplat') || d.includes('výběr') || d.includes('výplata') || d.includes('vybér') || d.includes('atm') || d.includes('bankomat') || d.includes('vklad') || d.includes('poplatek') || d.includes('správa') || d.includes('sprava') || d.includes('raiffeisen') || d.includes('portyš') || d.includes('portys') || d.includes('servis') || d.includes('lozisko')) cat = 'Výplaty+jiné výdaje';
+      else if (d.includes('výplat') || d.includes('výběr') || d.includes('výplata') || d.includes('vybér') || d.includes('atm') || d.includes('bankomat') || d.includes('vklad') || d.includes('poplatek') || d.includes('správa') || d.includes('sprava') || d.includes('raiffeisen') || d.includes('portyš') || d.includes('portys') || d.includes('servis') || d.includes('lozisko')) cat = 'Výdaje podnikání';
       else cat = 'Jiné';
     }
 
