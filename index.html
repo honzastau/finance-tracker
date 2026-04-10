@@ -164,16 +164,15 @@ header { background:var(--surface); border-bottom:1px solid var(--border); paddi
 .cat-add-btn { background:var(--accent); border:none; color:#fff; font-family:'Geologica',sans-serif; font-weight:700; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; padding:7px 12px; border-radius:8px; cursor:pointer; transition:opacity 0.15s; white-space:nowrap; }
 .cat-add-btn:hover { opacity:0.85; }
 
-.btn-import { background:none; border:1px solid var(--border); color:var(--muted); font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:11px; letter-spacing:0.08em; text-transform:uppercase; padding:7px 14px; cursor:pointer; border-radius:8px; transition:all 0.15s; white-space:nowrap; margin-right:8px; }
+.btn-import { background:none; border:1px solid var(--border); color:var(--muted); font-family:'DM Sans',sans-serif; font-weight:700; font-size:11px; letter-spacing:0.08em; text-transform:uppercase; padding:7px 14px; cursor:pointer; border-radius:8px; transition:all 0.15s; white-space:nowrap; margin-right:8px; }
 .btn-import:hover { border-color:var(--accent); color:var(--accent); background:var(--accent-light); }
 
-/* ── IMPORT MODAL ── */
 .import-overlay { position:fixed; inset:0; background:rgba(26,20,10,0.45); z-index:500; display:flex; align-items:center; justify-content:center; opacity:0; pointer-events:none; transition:opacity 0.2s; }
 .import-overlay.open { opacity:1; pointer-events:all; }
 .import-modal { background:var(--surface); border:1px solid var(--border); border-radius:16px; width:720px; max-width:96vw; max-height:90vh; display:flex; flex-direction:column; box-shadow:0 16px 48px rgba(26,20,10,0.18); transform:translateY(12px); transition:transform 0.2s; }
 .import-overlay.open .import-modal { transform:translateY(0); }
 .import-modal-header { padding:14px 20px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
-.import-modal-title { font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:13px; }
+.import-modal-title { font-family:'DM Sans',sans-serif; font-weight:700; font-size:13px; }
 .import-modal-body { padding:20px; display:flex; flex-direction:column; gap:14px; overflow-y:auto; flex:1; }
 .import-drop { border:2px dashed var(--border); border-radius:10px; padding:32px; text-align:center; cursor:pointer; transition:all 0.15s; }
 .import-drop:hover, .import-drop.drag { border-color:var(--accent); background:var(--accent-light); }
@@ -181,19 +180,23 @@ header { background:var(--surface); border-bottom:1px solid var(--border); paddi
 .import-drop-text { font-size:12px; color:var(--muted); }
 .import-drop-text strong { color:var(--accent); cursor:pointer; }
 .import-results { display:flex; flex-direction:column; gap:4px; max-height:55vh; overflow-y:auto; }
-.import-tx-row { display:grid; grid-template-columns:20px 80px 1fr auto auto auto; gap:8px; align-items:center; padding:7px 10px; border:1px solid var(--border); border-radius:8px; font-size:11px; font-family:'Plus Jakarta Sans',sans-serif; }
-.import-tx-row select { font-family:'Plus Jakarta Sans',sans-serif; font-size:11px; border:1px solid var(--border); border-radius:6px; padding:3px 6px; background:var(--surface2); color:var(--text); outline:none; cursor:pointer; }
+.import-tx-row { display:grid; grid-template-columns:20px 80px 1fr auto auto auto; gap:8px; align-items:center; padding:7px 10px; border:1px solid var(--border); border-radius:8px; font-size:11px; }
+.import-tx-row select { font-size:11px; border:1px solid var(--border); border-radius:6px; padding:3px 6px; background:var(--surface2); color:var(--text); outline:none; cursor:pointer; }
 .import-tx-row select:focus { border-color:var(--accent); }
 .import-tx-check { width:16px; height:16px; cursor:pointer; flex-shrink:0; accent-color:var(--accent); }
-.import-tx-desc { flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .import-tx-amount { font-weight:600; white-space:nowrap; flex-shrink:0; }
 .import-tx-amount.income { color:var(--green); }
 .import-tx-amount.expense { color:var(--red); }
 .import-status { font-size:12px; color:var(--muted); text-align:center; padding:8px; }
 .import-status.error { color:var(--red); }
 
-
-.lc-type-btn { padding:5px 12px; background:none; border:none; border-right:1px solid var(--border); cursor:pointer; font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:10px; letter-spacing:0.06em; text-transform:uppercase; color:var(--muted); transition:all 0.15s; white-space:nowrap; }
+.cat-filter-select { border:1px solid var(--border); color:var(--muted); font-family:'DM Sans',sans-serif; font-size:10px; padding:4px 22px 4px 8px; outline:none; cursor:pointer; appearance:none; background-color:var(--surface); background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%238a9478'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 7px center; border-radius:0 8px 8px 0; margin-left:-1px; transition:border-color 0.12s; }
+.cat-filter-select:focus, .cat-filter-select.active { border-color:var(--accent); color:var(--text); }
+.lc-range-btn { padding:4px 10px; background:none; border:1px solid var(--border); border-right:none; cursor:pointer; font-family:'DM Sans',sans-serif; font-size:10px; color:var(--muted); transition:all 0.12s; white-space:nowrap; }
+.lc-range-btn:first-child { border-radius:8px 0 0 8px; }
+.lc-range-btn:last-child { border-right:1px solid var(--border); border-radius:0 8px 8px 0; }
+.lc-range-btn.active { background:var(--accent-light); color:var(--accent); border-color:var(--accent); z-index:1; }
+.lc-type-btn { padding:5px 12px; background:none; border:none; border-right:1px solid var(--border); cursor:pointer; font-family:'DM Sans',sans-serif; font-weight:700; font-size:10px; letter-spacing:0.06em; text-transform:uppercase; color:var(--muted); transition:all 0.15s; white-space:nowrap; }
 .lc-type-btn:last-child { border-right:none; }
 .lc-type-btn:hover { color:var(--text); background:var(--surface2); }
 .lc-type-btn.active.income  { background:var(--green-bg); color:var(--green); }
@@ -219,10 +222,8 @@ header { background:var(--surface); border-bottom:1px solid var(--border); paddi
 </head>
 <body>
 
-<!-- LOADING BAR -->
 <div id="loadingBar" style="position:fixed;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),#e8a838,var(--accent));background-size:200% 100%;animation:shimmer 1.2s infinite linear;z-index:999;opacity:0;transition:opacity 0.2s;"></div>
-<!-- ERROR TOAST -->
-<div id="errorToast" style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#c0502a;color:#fff;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;padding:10px 20px;z-index:999;opacity:0;transition:opacity 0.3s;pointer-events:none;white-space:nowrap;"></div>
+<div id="errorToast" style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#c0502a;color:#fff;font-family:'DM Sans',sans-serif;font-size:12px;padding:10px 20px;z-index:999;opacity:0;transition:opacity 0.3s;pointer-events:none;white-space:nowrap;"></div>
 
 <header>
   <div class="logo">Finance Tracker</div>
@@ -292,7 +293,6 @@ header { background:var(--surface); border-bottom:1px solid var(--border); paddi
   </div>
 </header>
 
-<!-- IMPORT MODAL -->
 <div class="import-overlay" id="importOverlay" onclick="if(event.target===this)closeImport()">
   <div class="import-modal">
     <div class="import-modal-header">
@@ -308,10 +308,10 @@ header { background:var(--surface); border-bottom:1px solid var(--border); paddi
         <div class="import-drop-text">Přetáhni CSV výpis sem nebo <strong>vyber soubor</strong></div>
         <div class="import-drop-text" style="margin-top:4px;font-size:10px;">Podporovaný formát: CSV · Banky: ČS (běžný účet i karta), Moneta…</div>
       </div>
-      <input type="file" id="importFile" accept=".pdf,.csv" style="display:none" onchange="handleImportFile(this.files[0])">
+      <input type="file" id="importFile" accept=".csv" style="display:none" onchange="handleImportFile(this.files[0])">
       <div id="importStatus" class="import-status" style="display:none"></div>
       <div id="importResults" class="import-results" style="display:none"></div>
-      <div id="importActions" style="display:none;display:none;gap:8px;justify-content:flex-end;">
+      <div id="importActions" style="display:none;gap:8px;justify-content:flex-end;">
         <button class="btn-submit" style="width:auto;padding:9px 20px;" onclick="confirmImport()">Importovat vybrané</button>
       </div>
     </div>
@@ -345,7 +345,6 @@ header { background:var(--surface); border-bottom:1px solid var(--border); paddi
       </div>
     </div>
 
-    <!-- DONUTS ROW -->
     <div class="donuts-row">
       <div class="card donut-card">
         <div class="card-header"><span class="card-title">Příjmy</span></div>
@@ -394,11 +393,16 @@ header { background:var(--surface); border-bottom:1px solid var(--border); paddi
       </div>
     </div>
 
-    <!-- LINE CHART CARD -->
     <div class="card" style="margin-top:16px" id="lineChartCard">
       <div class="card-header" style="flex-wrap:wrap;gap:8px;">
-        <span class="card-title" id="lineChartTitle">${selectedYear} — vývoj kategorie</span>
-        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+        <span class="card-title" id="lineChartTitle">Vývoj kategorie</span>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-left:auto;">
+          <div style="display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;">
+            <button class="lc-range-btn active" id="lcRange1" onclick="setLcRange(1,this)">1 rok</button>
+            <button class="lc-range-btn" id="lcRange2" onclick="setLcRange(2,this)">2 roky</button>
+            <button class="lc-range-btn" id="lcRange3" onclick="setLcRange(3,this)">3 roky</button>
+            <button class="lc-range-btn" id="lcRange5" onclick="setLcRange(5,this)">5 let</button>
+          </div>
           <div style="display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;">
             <button class="lc-type-btn active income" id="lcBtnIncome" onclick="setLcType('income')">↑ Příjmy</button>
             <button class="lc-type-btn expense" id="lcBtnExpense" onclick="setLcType('expense')">↓ Výdaje</button>
@@ -415,11 +419,16 @@ header { background:var(--surface); border-bottom:1px solid var(--border); paddi
     <div class="card" style="margin-top:16px">
       <div class="card-header">
         <span class="card-title">Transakce</span>
-        <div class="filter-row">
-          <button class="ftab active" onclick="setFilter('all',this)">Vše</button>
-          <button class="ftab" onclick="setFilter('income',this)">Příjmy</button>
-          <button class="ftab" onclick="setFilter('expense',this)">Výdaje</button>
-          <button class="ftab" onclick="setFilter('savings',this)">Úspory</button>
+        <div style="display:flex;align-items:center;gap:0;">
+          <div class="filter-row">
+            <button class="ftab active" onclick="setFilter('all',this)">Vše</button>
+            <button class="ftab" onclick="setFilter('income',this)">Příjmy</button>
+            <button class="ftab" onclick="setFilter('expense',this)">Výdaje</button>
+            <button class="ftab" onclick="setFilter('savings',this)" style="border-radius:0;">Úspory</button>
+          </div>
+          <select class="cat-filter-select" id="catFilterSelect" onchange="setCatFilter(this.value,this)">
+            <option value="__all__">— všechny kategorie —</option>
+          </select>
         </div>
       </div>
       <div id="txList"></div>
@@ -429,41 +438,7 @@ header { background:var(--surface); border-bottom:1px solid var(--border); paddi
 </div>
 
 <script>
-// ── HESLO ─────────────────────────────────────────────────
-const APP_PASSWORD = '0411';
-
-(function() {
-  if (sessionStorage.getItem('ft_auth') === APP_PASSWORD) return;
-  const overlay = document.createElement('div');
-  overlay.style.cssText = 'position:fixed;inset:0;background:#1a1f12;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;gap:16px;';
-  overlay.innerHTML = `
-    <div style="font-family:'Geologica',sans-serif;font-size:22px;font-weight:800;color:#f5f8f0;letter-spacing:0.1em;text-transform:uppercase;">Finance Tracker</div>
-    <div style="font-family:'DM Sans',sans-serif;font-size:13px;color:#8a9478;margin-bottom:8px;">Zadejte heslo pro přístup</div>
-    <input id="authInput" type="password" placeholder="Heslo" style="font-family:'DM Sans',sans-serif;font-size:14px;padding:10px 16px;border-radius:8px;border:1px solid #3a4a2a;background:#2a3520;color:#f5f8f0;outline:none;width:220px;text-align:center;" />
-    <button id="authBtn" style="font-family:'Geologica',sans-serif;font-size:13px;font-weight:700;padding:10px 28px;border-radius:8px;background:#6abf00;color:#fff;border:none;cursor:pointer;letter-spacing:0.05em;">Vstoupit</button>
-    <div id="authErr" style="font-size:12px;color:#e03030;height:16px;font-family:'DM Sans',sans-serif;"></div>
-  `;
-  document.body.appendChild(overlay);
-
-  function tryLogin() {
-    const val = document.getElementById('authInput').value;
-    if (val === APP_PASSWORD) {
-      sessionStorage.setItem('ft_auth', APP_PASSWORD);
-      overlay.remove();
-    } else {
-      document.getElementById('authErr').textContent = 'Špatné heslo';
-      document.getElementById('authInput').value = '';
-      document.getElementById('authInput').focus();
-    }
-  }
-
-  document.getElementById('authBtn').addEventListener('click', tryLogin);
-  document.getElementById('authInput').addEventListener('keydown', e => {
-    if (e.key === 'Enter') tryLogin();
-  });
-  setTimeout(() => document.getElementById('authInput').focus(), 100);
-})();
-// ─────────────────────────────────────────────────────────
+// ── BEZ HESLA (dočasně) ──────────────────────────────────
 
 const MONTHS       = ['Leden','Únor','Březen','Duben','Květen','Červen','Červenec','Srpen','Září','Říjen','Listopad','Prosinec'];
 const MONTHS_SHORT = ['Led','Úno','Bře','Dub','Kvě','Čvn','Čvc','Srp','Zář','Říj','Lis','Pro'];
@@ -482,20 +457,25 @@ const ICONS = {
   'Bitcoin':'₿','DIP':'🧓','Trading212':'📊','Jiné':'❓'
 };
 
-const EXPENSE_COLORS = ['#e07048','#c07840','#e8a838','#9b6dd6','#d45c9b','#5b9bd5','#38b8a0','#6a9fd8','#8bc34a','#72b05a'];
-const INCOME_COLORS  = ['#72b05a','#4a7c3f','#38b8a0','#5b9bd5','#c07840','#e8a838','#9b6dd6','#e07048','#6a9fd8','#d45c9b'];
-const SAVINGS_COLORS = ['#5b9bd5','#3a6fa8','#38b8a0','#6a9fd8','#72b05a','#9b6dd6','#c07840','#e8a838'];
-
 const API_URL = 'https://script.google.com/macros/s/AKfycbx_i1L-641uH9CMnk6SidRlTE3PjCbEMGZWFupqZGjZ7anPOEzw2q_U50K9vy_vsbrENg/exec';
 
 let transactions  = [];
 let currentType   = 'income';
 let currentFilter = 'all';
+let currentCatFilter = '__all__';
 let selectedYear  = new Date().getFullYear();
 let selectedMonth = new Date().getMonth();
 let isLoading     = false;
 
 const fmtShort = n => Math.abs(n).toLocaleString('cs-CZ') + ' Kč';
+
+// ── POMOCNÁ FUNKCE: parsování data bez timezone problémů ─────────────────────
+// FIX 1: "2025-03-15" → new Date("2025-03-15") parsuje jako UTC půlnoc.
+// V CET (UTC+1) to je 23:59 předchozího dne → transakce z 1. v měsíci mizí do předchozího.
+// Oprava: vždy přidat T12:00:00 pro lokální poledne.
+function parseDate(dateStr) {
+  return new Date(dateStr + 'T12:00:00');
+}
 
 // ── API ───────────────────────────────────────────────────
 async function apiGet() {
@@ -526,19 +506,17 @@ async function apiDelete(id) {
   if (!data.ok) throw new Error(data.error);
 }
 
-async function apiSaveAll(txs) {
-  const url = API_URL + '?action=saveAll&txs=' + encodeURIComponent(JSON.stringify(txs));
-  const res  = await fetch(url);
-  const data = await res.json();
-  if (!data.ok) throw new Error(data.error);
-}
-
+// FIX 5: setLoading — pouze disabluje tlačítko v otevřeném add dropdownu,
+// ne první .btn-submit na stránce (což byl import button)
 function setLoading(on) {
   isLoading = on;
   document.getElementById('loadingBar').style.opacity = on ? '1' : '0';
   document.getElementById('loadingBar').style.height = on ? '3px' : '2px';
-  const btn = document.querySelector('.btn-submit');
-  if (btn) btn.disabled = on;
+  const dd = document.getElementById('addDropdown');
+  if (dd && dd.classList.contains('open')) {
+    const btn = dd.querySelector('.btn-submit');
+    if (btn) btn.disabled = on;
+  }
 }
 
 function showError(msg) {
@@ -553,7 +531,6 @@ function changeYear(d) { selectedYear += d; buildMonthPills(); render(); }
 
 function changeMonth(d) {
   if (selectedMonth === -1) {
-    // z "celý rok" přejdi na první/poslední měsíc
     selectedMonth = d > 0 ? 0 : 11;
   } else {
     selectedMonth += d;
@@ -577,7 +554,7 @@ function buildMonthPills() {
 
 function getFilteredTxs() {
   return transactions.filter(t => {
-    const d = new Date(t.date);
+    const d = parseDate(t.date); // FIX 1
     if (d.getFullYear() !== selectedYear) return false;
     return selectedMonth === -1 || d.getMonth() === selectedMonth;
   });
@@ -599,7 +576,7 @@ function closeDropdown() {
 document.addEventListener('click', e => {
   if (!document.getElementById('addWrap').contains(e.target)) closeDropdown();
 });
-document.addEventListener('keydown', e => { if (e.key==='Escape') closeDropdown(); });
+document.addEventListener('keydown', e => { if (e.key==='Escape') { closeDropdown(); closeSettings(); } });
 
 // ── FORM ─────────────────────────────────────────────────
 function setType(t) {
@@ -626,11 +603,10 @@ async function addTransaction() {
   if (!desc || !amount || amount<=0) return;
 
   const tx = { id: String(Date.now()), type: currentType, desc, amount, cat, date };
-  const txDate = new Date(date);
+  const txDate = parseDate(date); // FIX 1
   selectedYear  = txDate.getFullYear();
   selectedMonth = txDate.getMonth();
 
-  // optimistic update
   transactions.unshift(tx);
   dEl.value=''; aEl.value='';
   closeDropdown();
@@ -650,12 +626,13 @@ async function addTransaction() {
 }
 
 async function deleteTransaction(id) {
+  const sid = String(id); // FIX 7: ID může přijít jako number z onclick
   const backup = [...transactions];
-  transactions = transactions.filter(t => String(t.id) !== String(id));
+  transactions = transactions.filter(t => String(t.id) !== sid);
   render();
   try {
     setLoading(true);
-    await apiDelete(id);
+    await apiDelete(sid);
   } catch(e) {
     showError('Chyba při mazání: ' + e.message);
     transactions = backup;
@@ -664,11 +641,40 @@ async function deleteTransaction(id) {
     setLoading(false);
   }
 }
+
 function setFilter(f, el) {
   currentFilter = f;
+  currentCatFilter = '__all__';
   document.querySelectorAll('.ftab').forEach(b => b.classList.remove('active'));
   el.classList.add('active');
+  updateCatFilterSelect();
   renderTxList();
+}
+
+function setCatFilter(val, el) {
+  currentCatFilter = val;
+  el.classList.toggle('active', val !== '__all__');
+  renderTxList();
+}
+
+function updateCatFilterSelect() {
+  const sel = document.getElementById('catFilterSelect');
+  if (!sel) return;
+  // Collect categories based on active type filter
+  let cats = [];
+  if (currentFilter === 'all') {
+    cats = [...new Set([...CATEGORIES.income, ...CATEGORIES.expense, ...CATEGORIES.savings])].sort();
+  } else {
+    cats = CATEGORIES[currentFilter] || [];
+  }
+  sel.innerHTML = `<option value="__all__">— všechny kategorie —</option>` +
+    cats.map(c => `<option value="${c}"${c===currentCatFilter?' selected':''}>${ICONS[c]||'•'} ${c}</option>`).join('');
+  // Restore or reset
+  if (!cats.includes(currentCatFilter)) {
+    currentCatFilter = '__all__';
+    sel.value = '__all__';
+  }
+  sel.classList.toggle('active', currentCatFilter !== '__all__');
 }
 
 // ── SETTINGS ─────────────────────────────────────────────
@@ -708,18 +714,15 @@ function renderCatTags() {
     const div = document.createElement('div');
     div.className = 'cat-tag';
     div.id = 'cattag-' + i;
-
     const nameSpan = document.createElement('span');
     nameSpan.className = 'cat-tag-name';
     nameSpan.textContent = (ICONS[c]||'•') + ' ' + c;
     nameSpan.addEventListener('click', e => { e.stopPropagation(); startRenameCategory(i); });
-
     const delBtn = document.createElement('button');
     delBtn.className = 'cat-tag-del';
     delBtn.title = 'Smazat';
     delBtn.textContent = '×';
     delBtn.addEventListener('click', e => { e.stopPropagation(); removeCategory(i); });
-
     div.appendChild(nameSpan);
     div.appendChild(delBtn);
     container.appendChild(div);
@@ -730,10 +733,7 @@ function startRenameCategory(idx) {
   const tag = document.getElementById('cattag-' + idx);
   if (!tag) return;
   const oldName = CATEGORIES[sdType][idx];
-
-  // Clear and rebuild in place — no innerHTML replacement
   while (tag.firstChild) tag.removeChild(tag.firstChild);
-
   const inp = document.createElement('input');
   inp.className = 'cat-rename-input';
   inp.value = oldName;
@@ -743,17 +743,14 @@ function startRenameCategory(idx) {
     if (e.key === 'Enter') { e.preventDefault(); commitRename(idx); }
     if (e.key === 'Escape') renderCatTags();
   });
-
   const okBtn = document.createElement('button');
   okBtn.className = 'cat-add-btn';
   okBtn.textContent = '✓';
   okBtn.addEventListener('mousedown', e => { e.preventDefault(); e.stopPropagation(); commitRename(idx); });
-
   const cancelBtn = document.createElement('button');
   cancelBtn.className = 'cat-tag-del';
   cancelBtn.textContent = '✕';
   cancelBtn.addEventListener('mousedown', e => { e.preventDefault(); e.stopPropagation(); renderCatTags(); });
-
   tag.appendChild(inp);
   tag.appendChild(okBtn);
   tag.appendChild(cancelBtn);
@@ -776,6 +773,7 @@ function commitRename(idx) {
   renderCatTags();
   updateCatSelect();
   updateLcCatSelect();
+  updateCatFilterSelect();
   saveCategories();
   render();
 }
@@ -789,33 +787,23 @@ function addCategory() {
   inp.value = '';
   renderCatTags();
   updateCatSelect();
-  saveCategories();
-}
-
-function removeCategory(idx) {
+  updateCatFilterSelect();
+  saveCategories();(idx) {
   const cat = CATEGORIES[sdType][idx];
-  // don't remove if used by existing transactions
   const inUse = transactions.some(t => t.type === sdType && t.cat === cat);
-  if (inUse) {
-    showError(`Kategorii "${cat}" nelze smazat — je použita v transakcích`);
-    return;
-  }
+  if (inUse) { showError(`Kategorii "${cat}" nelze smazat — je použita v transakcích`); return; }
   CATEGORIES[sdType].splice(idx, 1);
   renderCatTags();
   updateCatSelect();
-  saveCategories();
-}
-
-async function saveCategories() {
+  updateCatFilterSelect();
+  saveCategories();() {
   try {
     await fetch(API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify({ action: 'saveCategories', cats: CATEGORIES })
     });
-  } catch(e) {
-    console.warn('saveCategories failed:', e);
-  }
+  } catch(e) { console.warn('saveCategories failed:', e); }
 }
 
 async function loadCategories() {
@@ -828,23 +816,26 @@ async function loadCategories() {
       CATEGORIES.expense = c.expense || CATEGORIES.expense;
       CATEGORIES.savings = c.savings || CATEGORIES.savings;
     } else {
-      // First run — push defaults to cloud
       await saveCategories();
     }
-  } catch(e) {
-    console.warn('loadCategories failed:', e);
-  }
+  } catch(e) { console.warn('loadCategories failed:', e); }
 }
 
 // ── LINE CHART ───────────────────────────────────────────
 let lcType = 'income';
 let lcCat  = '__total__';
+let lcRange = 1;
+
+function setLcRange(n, el) {
+  lcRange = n;
+  document.querySelectorAll('.lc-range-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  renderLineChart();
+}
 
 function setLcType(t) {
   lcType = t;
   ['income','expense','savings'].forEach(x => {
-    document.getElementById('lcBtn' + x.charAt(0).toUpperCase() + x.slice(1))
-      .classList.toggle('active', x===t);
     document.getElementById('lcBtn' + x.charAt(0).toUpperCase() + x.slice(1))
       .className = 'lc-type-btn' + (x===t ? ' active '+x : '');
   });
@@ -857,7 +848,6 @@ function updateLcCatSelect() {
   const cats = CATEGORIES[lcType] || [];
   sel.innerHTML = `<option value="__total__">— ${lcType==='income'?'Příjmy celkem':lcType==='expense'?'Výdaje celkem':'Úspory celkem'} —</option>`
     + cats.map(c=>`<option value="${c}">${ICONS[c]||'•'} ${c}</option>`).join('');
-  // restore selection if possible
   if ([...sel.options].some(o=>o.value===lcCat)) sel.value = lcCat;
   else { sel.selectedIndex=0; lcCat='__total__'; }
 }
@@ -871,20 +861,31 @@ function renderLineChart() {
   const innerW = W - PAD.left - PAD.right;
   const innerH = H - PAD.top - PAD.bottom;
 
-  // update card title
-  document.getElementById('lineChartTitle').textContent = `${selectedYear} — vývoj kategorie`;
+  // Časový rozsah: lcRange roků zpět od selectedYear
+  const yearTo   = selectedYear;
+  const yearFrom = selectedYear - lcRange + 1;
+  const totalMonths = lcRange * 12;
 
-  // Collect monthly totals for the selected year
-  const vals = MONTHS_SHORT.map((_,mi) => {
-    const txs = transactions.filter(t => {
-      const d = new Date(t.date);
-      return d.getFullYear()===selectedYear && d.getMonth()===mi && t.type===lcType;
-    });
-    if (lcCat === '__total__') return txs.reduce((s,t)=>s+t.amount,0);
-    return txs.filter(t=>t.cat===lcCat).reduce((s,t)=>s+t.amount,0);
-  });
+  document.getElementById('lineChartTitle').textContent =
+    lcRange === 1 ? `${selectedYear} — vývoj kategorie`
+                  : `${yearFrom}–${yearTo} — vývoj kategorie`;
 
-  const maxVal = Math.max(...vals, 1);
+  // Sestavit pole hodnot pro každý měsíc v rozsahu
+  const points_data = [];
+  for (let yr = yearFrom; yr <= yearTo; yr++) {
+    for (let mi = 0; mi < 12; mi++) {
+      const txs = transactions.filter(t => {
+        const d = parseDate(t.date);
+        return d.getFullYear()===yr && d.getMonth()===mi && t.type===lcType;
+      });
+      const val = lcCat === '__total__'
+        ? txs.reduce((s,t)=>s+t.amount,0)
+        : txs.filter(t=>t.cat===lcCat).reduce((s,t)=>s+t.amount,0);
+      points_data.push({ yr, mi, val });
+    }
+  }
+
+  const maxVal = Math.max(...points_data.map(p=>p.val), 1);
 
   function niceTop(max) {
     const steps = [1,2,5,10,20,25,50,100,200,250,500,1000,2000,2500,5000,10000,20000,25000,50000,100000,200000,500000,1000000];
@@ -905,22 +906,19 @@ function renderLineChart() {
     if (v >= 1000) return (v/1000 % 1 === 0 ? v/1000 : (v/1000).toFixed(1)) + 'k';
     return Math.round(v).toString();
   }
-  const color = lcType==='income'?'var(--green-bar)':lcType==='expense'?'var(--red-bar)':'var(--blue-bar)';
+  const color      = lcType==='income'?'var(--green-bar)':lcType==='expense'?'var(--red-bar)':'var(--blue-bar)';
   const colorSolid = lcType==='income'?'#72b05a':lcType==='expense'?'#e07048':'#5b9bd5';
 
-  const xStep = innerW / 11;
-  const points = vals.map((v,i) => ({
-    x: PAD.left + i * xStep,
-    y: PAD.top + innerH - (v/lcTopVal)*innerH,
-    v
+  const xStep = innerW / (totalMonths - 1);
+  const points = points_data.map((p, idx) => ({
+    x: PAD.left + idx * xStep,
+    y: PAD.top + innerH - (p.val/lcTopVal)*innerH,
+    v: p.val, yr: p.yr, mi: p.mi
   }));
 
-  // path
   const pathD = points.map((p,i)=>i===0?`M${p.x.toFixed(1)},${p.y.toFixed(1)}`:`L${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
-  // area fill
-  const areaD = pathD + ` L${points[11].x.toFixed(1)},${(PAD.top+innerH).toFixed(1)} L${points[0].x.toFixed(1)},${(PAD.top+innerH).toFixed(1)} Z`;
+  const areaD = pathD + ` L${points[points.length-1].x.toFixed(1)},${(PAD.top+innerH).toFixed(1)} L${points[0].x.toFixed(1)},${(PAD.top+innerH).toFixed(1)} Z`;
 
-  // Y axis ticks
   const yTicks = Array.from({length: lcTickCount+1}, (_,i) => i * lcStep).map(v => ({
     y: PAD.top + innerH - (v/lcTopVal)*innerH,
     label: fmtTick(v)
@@ -931,19 +929,37 @@ function renderLineChart() {
   ).join('');
 
   const yLabels = yTicks.map(t =>
-    `<text x="${(PAD.left-6).toFixed(1)}" y="${(t.y+3.5).toFixed(1)}" text-anchor="end" fill="var(--muted)" font-size="9" font-family="Plus Jakarta Sans,sans-serif">${t.label}</text>`
+    `<text x="${(PAD.left-6).toFixed(1)}" y="${(t.y+3.5).toFixed(1)}" text-anchor="end" fill="var(--muted)" font-size="9" font-family="DM Sans,sans-serif">${t.label}</text>`
   ).join('');
 
-  const xLabels = MONTHS_SHORT.map((m,i) => {
-    const x = PAD.left + i*xStep;
-    const isActive = selectedMonth===-1 || selectedMonth===i;
-    return `<text x="${x.toFixed(1)}" y="${(H-6).toFixed(1)}" text-anchor="middle" fill="${isActive?'var(--accent)':'var(--muted)'}" font-size="8" font-weight="${isActive?'700':'400'}" font-family="Bricolage Grotesque,sans-serif" text-transform="uppercase">${m}</text>`;
-  }).join('');
+  // X labels: při 1 roku zobraz měsíce, při více rokách zobraz měsíce + rok na přelomu
+  let xLabels = '';
+  if (lcRange === 1) {
+    points.forEach((p) => {
+      const isActive = selectedMonth===-1 || selectedMonth===p.mi;
+      xLabels += `<text x="${p.x.toFixed(1)}" y="${(H-6).toFixed(1)}" text-anchor="middle" fill="${isActive?'var(--accent)':'var(--muted)'}" font-size="8" font-weight="${isActive?'700':'400'}" font-family="DM Sans,sans-serif">${MONTHS_SHORT[p.mi]}</text>`;
+    });
+  } else {
+    // Zobraz jen leden každého roku s rokem jako label, mezitím každé 3 měsíce zkrácený měsíc
+    points.forEach((p, idx) => {
+      if (p.mi === 0) {
+        // Přelom roku — zobraz rok
+        xLabels += `<text x="${p.x.toFixed(1)}" y="${(H-6).toFixed(1)}" text-anchor="middle" fill="var(--accent)" font-size="8" font-weight="700" font-family="DM Sans,sans-serif">${p.yr}</text>`;
+        // Svislá dělicí čára
+        if (idx > 0) xLabels += `<line x1="${p.x.toFixed(1)}" y1="${PAD.top}" x2="${p.x.toFixed(1)}" y2="${(PAD.top+innerH).toFixed(1)}" stroke="var(--border2)" stroke-width="0.5" stroke-dasharray="3,3"/>`;
+      } else if (lcRange <= 3 && (p.mi % 3 === 0)) {
+        xLabels += `<text x="${p.x.toFixed(1)}" y="${(H-6).toFixed(1)}" text-anchor="middle" fill="var(--muted)" font-size="7" font-family="DM Sans,sans-serif">${MONTHS_SHORT[p.mi]}</text>`;
+      } else if (lcRange > 3 && p.mi === 6) {
+        xLabels += `<text x="${p.x.toFixed(1)}" y="${(H-6).toFixed(1)}" text-anchor="middle" fill="var(--muted)" font-size="7" font-family="DM Sans,sans-serif">${MONTHS_SHORT[p.mi]}</text>`;
+      }
+    });
+  }
 
   const crosshair = `<line id="lcCross" x1="0" y1="${PAD.top}" x2="0" y2="${PAD.top+innerH}" stroke="var(--muted)" stroke-width="1" stroke-dasharray="3,3" opacity="0" pointer-events="none"/>`;
-  const visibleDots = points.map((p,i) =>
+  // Tečky jen při 1 roku (jinak je jich moc)
+  const visibleDots = lcRange === 1 ? points.map(p =>
     `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3" fill="${p.v>0?colorSolid:'var(--border)'}" pointer-events="none"/>`
-  ).join('');
+  ).join('') : '';
   const hitRect = `<rect id="lcHitRect" x="${PAD.left}" y="${PAD.top}" width="${innerW}" height="${innerH}" fill="transparent"/>`;
 
   const gradId = 'lcGrad_' + lcType;
@@ -966,18 +982,14 @@ function renderLineChart() {
     ${hitRect}
   `;
 
-  // Attach mousemove listener directly — no inline handlers
-  const hitEl = svg.getElementById ? svg.getElementById('lcHitRect') : svg.querySelector('#lcHitRect');
+  const hitEl = svg.querySelector('#lcHitRect');
   if (hitEl) {
     hitEl.addEventListener('mousemove', function(e) {
       const svgRect = svg.getBoundingClientRect();
       const mouseX = (e.clientX - svgRect.left) * (W / svgRect.width);
-      // Find nearest point
-      let nearest = 0;
-      let minDist = Infinity;
+      let nearest = 0, minDist = Infinity;
       points.forEach((p, i) => { const d = Math.abs(p.x - mouseX); if (d < minDist) { minDist = d; nearest = i; } });
-      showLcTipDirect(e, nearest, vals, MONTHS_SHORT, colorSolid);
-      // Move crosshair
+      showLcTipDirect(e, nearest, points, colorSolid);
       const cross = svg.querySelector('#lcCross');
       if (cross) { cross.setAttribute('x1', (PAD.left + (mouseX - PAD.left)).toFixed(1)); cross.setAttribute('x2', (PAD.left + (mouseX - PAD.left)).toFixed(1)); cross.setAttribute('opacity', '0.6'); }
     });
@@ -992,16 +1004,17 @@ function renderLineChart() {
   document.body.appendChild(tip);
 })();
 
-function showLcTipDirect(event, idx, vals, months, color) {
+function showLcTipDirect(event, idx, points, color) {
   const tip = document.getElementById('lcTip');
-  const v = vals[idx];
-  tip.textContent = v > 0 ? v.toLocaleString('cs-CZ') + ' Kč' : '—';
+  const p = points[idx];
+  const label = lcRange === 1
+    ? MONTHS_SHORT[p.mi]
+    : `${MONTHS_SHORT[p.mi]} ${p.yr}`;
+  tip.textContent = p.v > 0 ? `${label}: ${p.v.toLocaleString('cs-CZ')} Kč` : `${label}: —`;
   tip.style.background = color;
   tip.style.display = 'block';
-  const x = event.clientX + 12;
-  const y = event.clientY - 16;
-  tip.style.left = x + 'px';
-  tip.style.top  = y + 'px';
+  tip.style.left = (event.clientX + 12) + 'px';
+  tip.style.top  = (event.clientY - 16) + 'px';
 }
 
 function hideLcTip() {
@@ -1031,17 +1044,16 @@ function render() {
   bEl.style.color = balance>=0 ? 'var(--green)' : 'var(--red)';
   document.getElementById('statBalanceSub').textContent = balance>=0 ? 'ušetřeno' : 'přečerpáno';
 
-  // ── % change vs previous period ──
   let prevIncome=0, prevExpense=0, prevSavings=0;
   if (isYear) {
-    const prev = transactions.filter(t => new Date(t.date).getFullYear() === selectedYear-1);
+    const prev = transactions.filter(t => parseDate(t.date).getFullYear() === selectedYear-1); // FIX 1
     prevIncome  = prev.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
     prevExpense = prev.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
     prevSavings = prev.filter(t=>t.type==='savings').reduce((s,t)=>s+t.amount,0);
   } else {
     let pm = selectedMonth - 1, py = selectedYear;
     if (pm < 0) { pm = 11; py--; }
-    const prev = transactions.filter(t => { const d=new Date(t.date); return d.getFullYear()===py && d.getMonth()===pm; });
+    const prev = transactions.filter(t => { const d=parseDate(t.date); return d.getFullYear()===py && d.getMonth()===pm; }); // FIX 1
     prevIncome  = prev.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
     prevExpense = prev.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
     prevSavings = prev.filter(t=>t.type==='savings').reduce((s,t)=>s+t.amount,0);
@@ -1051,11 +1063,9 @@ function render() {
     const p = Math.round((cur - prev) / prev * 100);
     return (p >= 0 ? '+' : '') + p + ' %';
   };
-  const pctColor = (cur, prev, higherIsBetter) => {
+  const pctColor = (cur, prev, hib) => {
     if (prev === 0) return '';
-    return cur >= prev
-      ? (higherIsBetter ? 'color:var(--green)' : 'color:var(--red)')
-      : (higherIsBetter ? 'color:var(--red)'   : 'color:var(--green)');
+    return cur >= prev ? (hib ? 'color:var(--green)' : 'color:var(--red)') : (hib ? 'color:var(--red)' : 'color:var(--green)');
   };
   const periodLabel = isYear ? String(selectedYear-1) : (() => { let pm=selectedMonth-1,py=selectedYear; if(pm<0){pm=11;py--;} return MONTHS[pm]; })();
   const fmtSub = (cur, prev, hib) => {
@@ -1076,15 +1086,14 @@ function render() {
 
 // ── DONUT ────────────────────────────────────────────────
 function getGradientColors(type, n) {
-  // biggest slice (index 0) = darkest, smallest = lightest
   const palettes = {
-    income:  [[210,245,200],[60,160,60]],   // světle zelená → střední zelená
-    expense: [[255,200,185],[200,65,45]],   // světle lososová → střední červená
-    savings: [[185,220,255],[50,130,220]],  // světle modrá → střední modrá
+    income:  [[210,245,200],[60,160,60]],
+    expense: [[255,200,185],[200,65,45]],
+    savings: [[185,220,255],[50,130,220]],
   };
   const [lo, hi] = palettes[type] || palettes.income;
   return Array.from({length:n}, (_,i) => {
-    const t = n===1 ? 1 : 1 - i/(n-1); // reversed: i=0 → t=1 (darkest)
+    const t = n===1 ? 1 : 1 - i/(n-1);
     const r = Math.round(lo[0]+(hi[0]-lo[0])*t);
     const g = Math.round(lo[1]+(hi[1]-lo[1])*t);
     const b = Math.round(lo[2]+(hi[2]-lo[2])*t);
@@ -1113,7 +1122,6 @@ function renderDonut(type, txs, total) {
   valEl.textContent = Math.abs(total).toLocaleString('cs-CZ') + ' Kč';
   valEl.style.color = centerColor;
 
-  // Top 5 in donut, rest as "Ostatní"
   const top5 = sorted.slice(0, 5);
   const rest = sorted.slice(5);
   const restSum = rest.reduce((s,[,v])=>s+v, 0);
@@ -1136,9 +1144,8 @@ function renderDonut(type, txs, total) {
   paths += `<circle cx="${cx}" cy="${cy}" r="${r-sw/2-1}" fill="var(--surface)"/>`;
   svgEl.innerHTML = paths;
 
-  // Legend shows ALL categories, top 5 get their gradient color dot, rest get grey
   const top5Names = new Set(top5.map(([c])=>c));
-  legEl.innerHTML = sorted.map(([cat,amt],i) => {
+  legEl.innerHTML = sorted.map(([cat,amt]) => {
     const pct = total>0 ? Math.round(amt/total*100) : 0;
     const dotColor = top5Names.has(cat) ? colors[top5.findIndex(([c])=>c===cat)] : 'var(--muted)';
     return `<div class="dl-row">
@@ -1151,12 +1158,11 @@ function renderDonut(type, txs, total) {
 
 // ── BAR CHART ────────────────────────────────────────────
 function renderChart() {
-  const isYear = selectedMonth === -1;
   document.getElementById('chartTitle').textContent = `${selectedYear} — přehled`;
 
   const data = MONTHS_SHORT.map((lbl,mi) => {
     const t = transactions.filter(x=>{
-      const d=new Date(x.date);
+      const d=parseDate(x.date); // FIX 1
       return d.getFullYear()===selectedYear && d.getMonth()===mi;
     });
     return {
@@ -1164,16 +1170,32 @@ function renderChart() {
       income:  t.filter(x=>x.type==='income').reduce((s,x)=>s+x.amount,0),
       expense: t.filter(x=>x.type==='expense').reduce((s,x)=>s+x.amount,0),
       savings: t.filter(x=>x.type==='savings').reduce((s,x)=>s+x.amount,0),
-      active:  isYear || mi === selectedMonth
+      active:  selectedMonth === -1 || mi === selectedMonth
     };
   });
 
   const max = Math.max(...data.flatMap(d=>[d.income,d.expense,d.savings]),1);
-  const topVal = Math.ceil(max / 10000) * 10000 || 10000;
-  const tickCount = Math.min(topVal / 10000, 6);
-  const tickStep = topVal / tickCount;
+
+  // FIX 6: dynamická škála místo pevného kroku 10 000 Kč
+  function niceBarTop(m) {
+    const steps = [100,200,500,1000,2000,5000,10000,20000,50000,100000,200000,500000,1000000];
+    for (const s of steps) {
+      const top = Math.ceil(m / s) * s;
+      const n = top / s;
+      if (n >= 3 && n <= 6) return { top, step: s };
+    }
+    const s = Math.pow(10, Math.floor(Math.log10(m)));
+    return { top: Math.ceil(m/s)*s, step: s };
+  }
+  const { top: topVal, step: tickStep } = niceBarTop(max);
+  const tickCount = Math.round(topVal / tickStep);
   const ticks = Array.from({length: tickCount+1}, (_,i) => i * tickStep);
-  const fmt10k = v => v===0 ? '0' : (v/1000)+'k';
+  const fmtTick = v => {
+    if (v === 0) return '0';
+    if (v >= 1000000) return (v/1000000) + 'M';
+    if (v >= 1000) return (v/1000 % 1 === 0 ? v/1000 : (v/1000).toFixed(1)) + 'k';
+    return Math.round(v).toString();
+  };
 
   const chartEl = document.getElementById('chart');
   const W = chartEl.parentElement.clientWidth - 36;
@@ -1182,7 +1204,6 @@ function renderChart() {
   const innerW = W - PAD.left - PAD.right;
   const H = BAR_AREA_H + PAD.top + PAD.bottom;
 
-  // SVG Y axis grid + labels
   const gridLines = ticks.map(v => {
     const y = PAD.top + BAR_AREA_H - (v/topVal)*BAR_AREA_H;
     return `<line x1="${PAD.left}" y1="${y.toFixed(1)}" x2="${PAD.left+innerW}" y2="${y.toFixed(1)}" stroke="var(--border)" stroke-width="1"/>`;
@@ -1190,10 +1211,9 @@ function renderChart() {
 
   const yLabels = ticks.map(v => {
     const y = PAD.top + BAR_AREA_H - (v/topVal)*BAR_AREA_H;
-    return `<text x="${(PAD.left-6).toFixed(1)}" y="${(y+3.5).toFixed(1)}" text-anchor="end" fill="var(--muted)" font-size="9" font-family="Plus Jakarta Sans,sans-serif">${fmt10k(v)}</text>`;
+    return `<text x="${(PAD.left-6).toFixed(1)}" y="${(y+3.5).toFixed(1)}" text-anchor="end" fill="var(--muted)" font-size="9" font-family="DM Sans,sans-serif">${fmtTick(v)}</text>`;
   }).join('');
 
-  // Bar columns inside SVG
   const colW = innerW / 12;
   const barW = 5;
   const gap = 2;
@@ -1207,8 +1227,8 @@ function renderChart() {
     const sh = Math.max(1, (d.savings/topVal)*BAR_AREA_H);
     const baseY = PAD.top + BAR_AREA_H;
     const opacity = d.active ? 1 : 0.18;
-    const lblColor = d.active && !isYear ? 'var(--accent)' : 'var(--muted)';
-    const lblWeight = d.active && !isYear ? '700' : '400';
+    const lblColor = d.active && selectedMonth !== -1 ? 'var(--accent)' : 'var(--muted)';
+    const lblWeight = d.active && selectedMonth !== -1 ? '700' : '400';
     return `
       <g opacity="${opacity}">
         <rect x="${bx.toFixed(1)}" y="${(baseY-ih).toFixed(1)}" width="${barW}" height="${ih.toFixed(1)}" fill="var(--green-bar)"
@@ -1217,7 +1237,7 @@ function renderChart() {
           onmouseenter="showBarTip(event,'−${fmtShort(d.expense)}','#e07048')" onmouseleave="hideBarTip()"/>
         <rect x="${(bx+2*(barW+gap)).toFixed(1)}" y="${(baseY-sh).toFixed(1)}" width="${barW}" height="${sh.toFixed(1)}" fill="var(--blue-bar)"
           onmouseenter="showBarTip(event,'${fmtShort(d.savings)}','#5b9bd5')" onmouseleave="hideBarTip()"/>
-        <text x="${cx.toFixed(1)}" y="${(H-6).toFixed(1)}" text-anchor="middle" fill="${lblColor}" font-size="8" font-weight="${lblWeight}" font-family="Bricolage Grotesque,sans-serif">${d.label}</text>
+        <text x="${cx.toFixed(1)}" y="${(H-6).toFixed(1)}" text-anchor="middle" fill="${lblColor}" font-size="8" font-weight="${lblWeight}" font-family="DM Sans,sans-serif">${d.label}</text>
       </g>`;
   }).join('');
 
@@ -1227,11 +1247,11 @@ function renderChart() {
 }
 
 // ── TX LIST ──────────────────────────────────────────────
-
 function renderTxList() {
   const txs      = getFilteredTxs();
-  const filtered = (currentFilter==='all' ? txs : txs.filter(t=>t.type===currentFilter))
-    .slice().sort((a,b) => new Date(b.date) - new Date(a.date) || b.id - a.id);
+  let filtered = currentFilter==='all' ? txs : txs.filter(t=>t.type===currentFilter);
+  if (currentCatFilter !== '__all__') filtered = filtered.filter(t => t.cat === currentCatFilter);
+  filtered = filtered.slice().sort((a,b) => new Date(b.date) - new Date(a.date) || b.id - a.id);
   const el = document.getElementById('txList');
 
   if (!filtered.length) {
@@ -1239,7 +1259,8 @@ function renderTxList() {
     return;
   }
 
-  const fmtDate = d => new Date(d).toLocaleDateString('cs-CZ',{day:'numeric',month:'short'});
+  // FIX 1: parseDate pro zobrazení data
+  const fmtDate = d => parseDate(d).toLocaleDateString('cs-CZ',{day:'numeric',month:'short'});
 
   el.innerHTML = filtered.map(t => {
     const cats = CATEGORIES[t.type] || [];
@@ -1257,19 +1278,16 @@ function renderTxList() {
       </div>
       <div class="tx-right">
         <div class="tx-amount ${t.type}">${sign}${t.amount.toLocaleString('cs-CZ')} Kč</div>
-        <button class="tx-del" onclick="deleteTransaction(${t.id})">×</button>
+        <button class="tx-del" onclick="deleteTransaction('${String(t.id)}')">×</button>
       </div>
     </div>`;
+    // FIX 7: ID obaleno uvozovkami — předchází problémům s float ID z importu
   }).join('');
 }
 
 async function saveTxCat(id, newCat) {
-  console.log('saveTxCat called:', id, newCat);
   const tx = transactions.find(t => String(t.id) === String(id));
-  if (!tx) {
-    console.error('tx not found:', id, 'available ids:', transactions.slice(0,3).map(t=>String(t.id)));
-    return;
-  }
+  if (!tx) return;
   if (tx.cat === newCat) return;
   const oldCat = tx.cat;
   tx.cat = newCat;
@@ -1282,7 +1300,6 @@ async function saveTxCat(id, newCat) {
     });
     const data = await res.json();
     if (!data.ok) throw new Error(data.error);
-    console.log('saveTxCat OK');
     render();
   } catch(e) {
     console.error('saveTxCat failed:', e);
@@ -1292,18 +1309,30 @@ async function saveTxCat(id, newCat) {
   }
 }
 
+// FIX 3: saveTxDesc — atomická operace přes updateDesc POST
+// Původní kód dělal apiDelete + apiAdd jako dva separátní volání.
+// Pokud add selhal po úspěšném delete, transakce zmizela.
+// Nyní používáme dedikovaný updateDesc endpoint (viz Code.gs).
 async function saveTxDesc(id, newDesc) {
   const tx = transactions.find(t => String(t.id) === String(id));
   if (!tx || !newDesc || newDesc === tx.desc) return;
   const oldDesc = tx.desc;
   tx.desc = newDesc;
+  setLoading(true);
   try {
-    await apiDelete(tx.id);
-    await fetch(API_URL + '?action=add&tx=' + encodeURIComponent(JSON.stringify(tx)));
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ action: 'updateDesc', id: tx.id, desc: newDesc })
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'updateDesc failed');
   } catch(e) {
     console.error('saveTxDesc failed:', e);
     tx.desc = oldDesc;
     render();
+  } finally {
+    setLoading(false);
   }
 }
 
@@ -1332,12 +1361,8 @@ async function init() {
   setLoading(true);
   document.getElementById('txList').innerHTML = '<div class="empty-tx">Načítám data…</div>';
   try {
-    // Load categories and transactions in parallel
     const [, txs] = await Promise.all([loadCategories(), apiGet()]);
     transactions = txs;
-    if (transactions.length === 0) {
-      // no transactions yet
-    }
   } catch(e) {
     showError('Nepodařilo se načíst data: ' + e.message);
     transactions = [];
@@ -1346,31 +1371,22 @@ async function init() {
   }
   updateCatSelect();
   updateLcCatSelect();
+  updateCatFilterSelect();
 
-  // single persistent listener for category changes in tx list
   document.getElementById('txList').addEventListener('change', function(e) {
     const sel = e.target.closest('.tx-cat-select');
     if (!sel) return;
-    console.log('change detected', sel.dataset.id, sel.value);
     saveTxCat(sel.dataset.id, sel.value);
   });
 
   render();
 }
 
-
 // ── IMPORT ───────────────────────────────────────────────
 let importedTxs = [];
 
-function toggleImport() {
-  document.getElementById('importOverlay').classList.toggle('open');
-}
-
-function closeImport() {
-  document.getElementById('importOverlay').classList.remove('open');
-  resetImport();
-}
-
+function toggleImport() { document.getElementById('importOverlay').classList.toggle('open'); }
+function closeImport() { document.getElementById('importOverlay').classList.remove('open'); resetImport(); }
 function resetImport() {
   importedTxs = [];
   document.getElementById('importStatus').style.display = 'none';
@@ -1382,40 +1398,22 @@ function resetImport() {
 
 async function handleImportFile(file) {
   if (!file) return;
-  const isPdf = file.type === 'application/pdf' || file.name.endsWith('.pdf');
   const isCsv = file.type === 'text/csv' || file.name.endsWith('.csv');
-  if (!isPdf && !isCsv) {
-    showImportStatus('Prosím nahraj PDF nebo CSV soubor.', true);
-    return;
-  }
+  if (!isCsv) { showImportStatus('Prosím nahraj CSV soubor.', true); return; }
   document.getElementById('importDrop').style.display = 'none';
   showImportStatus('Zpracovávám soubor…');
-
   try {
-    if (isCsv) {
-      const text = await new Promise((res, rej) => {
-        const r = new FileReader();
-        r.onload = () => res(r.result);
-        r.onerror = () => rej(new Error('Chyba čtení souboru'));
-        r.readAsText(file, 'UTF-8');
-      });
-      const rows = parseCsv(text, file.name);
-      if (!rows.length) { showImportStatus('Nenalezeny žádné transakce.', true); document.getElementById('importDrop').style.display='block'; return; }
-      showImportStatus(`Kategorizuji ${rows.length} transakcí…`);
-      importedTxs = applyImportMemory(await categorizeTxs(rows));
-      renderImportResults();
-    } else {
-      // PDF — pošli celý soubor AI
-      const base64 = await new Promise((res, rej) => {
-        const r = new FileReader();
-        r.onload = () => res(r.result.split(',')[1]);
-        r.onerror = () => rej(new Error('Chyba čtení souboru'));
-        r.readAsDataURL(file);
-      });
-      showImportStatus('Čtu PDF a kategorizuji transakce pomocí AI…');
-      importedTxs = await categorizePdf(base64);
-      renderImportResults();
-    }
+    const text = await new Promise((res, rej) => {
+      const r = new FileReader();
+      r.onload = () => res(r.result);
+      r.onerror = () => rej(new Error('Chyba čtení souboru'));
+      r.readAsText(file, 'UTF-8');
+    });
+    const rows = parseCsv(text, file.name);
+    if (!rows.length) { showImportStatus('Nenalezeny žádné transakce.', true); document.getElementById('importDrop').style.display='block'; return; }
+    showImportStatus(`Kategorizuji ${rows.length} transakcí…`);
+    importedTxs = applyImportMemory(await categorizeTxs(rows));
+    renderImportResults();
   } catch(e) {
     showImportStatus('Chyba: ' + e.message, true);
     document.getElementById('importDrop').style.display = 'block';
@@ -1423,12 +1421,10 @@ async function handleImportFile(file) {
 }
 
 function parseCsv(text, filename) {
-  // Remove BOM
   text = text.replace(/^\uFEFF/, '');
   const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
   if (lines.length < 2) return [];
 
-  // Parse semicolon-separated, quoted fields
   function parseRow(line) {
     const fields = [];
     let cur = '', inQ = false;
@@ -1447,13 +1443,11 @@ function parseCsv(text, filename) {
     return parseFloat(s.replace(/\s/g, '').replace(',', '.'));
   }
 
-  function parseDate(s) {
+  function parseDateStr(s) {
     if (!s) return null;
     s = s.trim();
-    // "27. 2. 2026" → kreditní karty ČS
     let m = s.match(/^(\d{1,2})\.\s*(\d{1,2})\.\s*(\d{4})$/);
     if (m) return `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;
-    // "27.02.2026"
     m = s.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
     if (m) return `${m[3]}-${m[2]}-${m[1]}`;
     return null;
@@ -1461,24 +1455,18 @@ function parseCsv(text, filename) {
 
   const headers = parseRow(lines[0]);
   const rows = [];
-
-  // Detect format by headers
   const h = headers.map(x => x.toLowerCase());
   const isKartaCS = h.includes('číslo kreditní karty');
   const isBeznyCS = h.includes('číslo účtu') && h.includes('zpráva');
   const isMoneta  = h.includes('iban') && h.includes('zpráva pro příjemce');
 
-  // Vlastní účty — převody mezi nimi se filtrují
   const OWN_ACCOUNTS = ['1319720004', '216228979', '258320693', '1319763004', '531533', '520655', '1101083110'];
 
   function isInternalTransfer(row) {
     const d = (row.desc || '').toLowerCase();
     const cp = (row.counterpart || '').toLowerCase();
-    // Splátky kreditní karty
     if (d.includes('splátka klienta') || d.includes('splatka klienta')) return true;
-    // Přesun mezi vlastními účty podle čísla protiúčtu
     if (cp && OWN_ACCOUNTS.some(a => cp.includes(a))) return true;
-    // Obecné interní přesuny
     if ((d.includes('staudinger') || d.includes('jan staudinger')) && (d.includes('okamžitá úhrada') || d.includes('příchozí') || d.includes('odchozí') || cp.includes('258320693') || cp.includes('1319720004') || cp.includes('216228979'))) return true;
     return false;
   }
@@ -1486,29 +1474,28 @@ function parseCsv(text, filename) {
   for (let i = 1; i < lines.length; i++) {
     const f = parseRow(lines[i]);
     const get = (col) => (f[headers.findIndex(x => x === col)] || '').trim();
-
     let date, desc, amount, counterpart, counterpartName;
 
     if (isKartaCS) {
-      date = parseDate(get('Datum transakce'));
+      date = parseDateStr(get('Datum transakce'));
       amount = parseAmount(get('Zaúčtovaná částka'));
       desc = get('Název Obchodníka') || get('Popis/Místo transakce') || get('Typ transakce');
       counterpart = '';
       counterpartName = get('Název Obchodníka') || get('Město') || '';
     } else if (isBeznyCS) {
-      date = parseDate(get('Datum provedení'));
+      date = parseDateStr(get('Datum provedení'));
       amount = parseAmount(get('Zaúčtovaná částka'));
       desc = get('Zpráva') || get('Poznámka') || get('Název protiúčtu') || get('Typ transakce');
       counterpart = get('Číslo protiúčtu');
       counterpartName = get('Název protiúčtu') || '';
     } else if (isMoneta) {
-      date = parseDate(get('Splatnost'));
+      date = parseDateStr(get('Splatnost'));
       amount = parseAmount(get('Částka'));
       desc = get('Zpráva pro příjemce') || get('Poznámka pro mě') || get('Popis platby') || get('Typ transakce');
       counterpart = get('Číslo protiúčtu');
       counterpartName = get('Název účtu příjemce') || '';
     } else {
-      date = parseDate(f[0]) || parseDate(f[1]);
+      date = parseDateStr(f[0]) || parseDateStr(f[1]);
       amount = parseAmount(f.find(x => x.match(/^-?[\d\s]+,\d{2}$/)) || '');
       desc = f[2] || f[3] || '';
       counterpart = '';
@@ -1534,23 +1521,16 @@ async function categorizeTxs(rows) {
     const amt = r.amount;
     let type, cat;
 
-    // Determine type
     if (amt > 0) {
-      // Splátky kreditní karty jsou interní přesuny — přeskočíme je filtrem výše
       if (d.includes('trading') || d.includes('t212') || d.includes('dip') || d.includes('bitcoin') || d.includes('coinbase') || d.includes('bitstamp')) {
         type = 'savings';
-      } else {
-        type = 'income';
-      }
+      } else { type = 'income'; }
     } else {
       if (d.includes('trading') || d.includes('t212') || d.includes('dip') || d.includes('bitcoin') || d.includes('coinbase')) {
         type = 'savings';
-      } else {
-        type = 'expense';
-      }
+      } else { type = 'expense'; }
     }
 
-    // Determine category
     if (type === 'savings') {
       if (d.includes('bitcoin') || d.includes('coinbase') || d.includes('bitstamp')) cat = 'Bitcoin';
       else if (d.includes('dip')) cat = 'DIP';
@@ -1563,30 +1543,25 @@ async function categorizeTxs(rows) {
       else if (d.includes('cenný') || d.includes('divid') || d.includes('úrok')) cat = 'Příjmy z cenných papírů';
       else cat = 'Jiné';
     } else {
-      // expense categories
       if (d.includes('lidl') || d.includes('globus') || d.includes('kaufland') || d.includes('albert') || d.includes('billa') || d.includes('tesco') || d.includes('penny') || d.includes('potraviny') || d.includes('coop') || d.includes('terno')) cat = 'Potraviny';
       else if (d.includes('mcdonald') || d.includes('kfc') || d.includes('burger') || d.includes('restaur') || d.includes('kavárna') || d.includes('kavarna') || d.includes('cafe') || d.includes('café') || d.includes('pizza') || d.includes('kebab') || d.includes('sushi') || d.includes('bolt food') || d.includes('wolt') || d.includes('dáme jídlo') || d.includes('dame jidlo') || d.includes('u cap') || d.includes('u baumann') || d.includes('anoda') || d.includes('skog') || d.includes('kam restaur') || d.includes('koleje a menzy')) cat = 'Restaurace/kavárny';
       else if (d.includes('hospoda') || d.includes('pivnice') || d.includes('bar ') || d.includes('ples') || d.includes('club') || d.includes('pub')) cat = 'Hospody/bary/plesy';
       else if (d.includes('nájem') || d.includes('najem') || d.includes('náj') || d.includes('energie') || d.includes('elektr') || d.includes('plyn') || d.includes('voda') || d.includes('bydlen') || d.includes('správa karty') || d.includes('sprava karty')) cat = 'Bydlení';
       else if (d.includes('ids') || d.includes('idsjmk') || d.includes('doprav') || d.includes('autobus') || d.includes('vlak') || d.includes('metro') || d.includes('taxi') || d.includes('bolt.eu') || d.includes('parking') || d.includes('easypark') || d.includes('parkov') || d.includes('shell') || d.includes('pohl') || d.includes('mol ') || d.includes('benzin') || d.includes('benzi') || d.includes('čerpac') || d.includes('cerpac') || d.includes('moto')) cat = 'Doprava';
       else if (d.includes('cd.cz') || d.includes('české dráhy') || d.includes('ceske drahy') || d.includes('regiojet') || d.includes('flixbus') || d.includes('ryanair') || d.includes('booking') || d.includes('airbnb') || d.includes('hotel') || d.includes('letiště') || d.includes('letiste')) cat = 'Cestování';
-      else if (d.includes('netflix') || d.includes('spotify') || d.includes('apple') || d.includes('google play') || d.includes('hbo') || d.includes('disney') || d.includes('youtube') || d.includes('globdata') || d.includes('előfiz') || d.includes('předpl') || d.includes('predpl') || d.includes('streamov')) cat = 'Předplatné/média';
+      else if (d.includes('netflix') || d.includes('spotify') || d.includes('apple') || d.includes('google play') || d.includes('hbo') || d.includes('disney') || d.includes('youtube') || d.includes('globdata') || d.includes('předpl') || d.includes('predpl') || d.includes('streamov')) cat = 'Předplatné/média';
       else if (d.includes('lékárna') || d.includes('lekarna') || d.includes('doktor') || d.includes('nemocnic') || d.includes('zubař') || d.includes('zubar') || d.includes('zdravot') || d.includes('geco') || d.includes('benu') || d.includes('dr.max')) cat = 'Zdravotní péče';
       else if (d.includes('sport') || d.includes('gym') || d.includes('fitness') || d.includes('squash') || d.includes('tenis') || d.includes('bazén') || d.includes('bazen') || d.includes('relax') || d.includes('wellness') || d.includes('sauna')) cat = 'Sport/relax';
       else if (d.includes('kino') || d.includes('divadlo') || d.includes('koncert') || d.includes('festival') || d.includes('muzeum') || d.includes('galerie') || d.includes('vstupenk')) cat = 'Koncerty/kino/divadlo';
       else if (d.includes('daň') || d.includes('dan') || d.includes('pojišt') || d.includes('pojist') || d.includes('odvod') || d.includes('finanční úřad') || d.includes('financni urad') || d.includes('sociální') || d.includes('socialni') || d.includes('zdravotní pojišt') || d.includes('exekuc') || d.includes('ceecr')) cat = 'Odvody/daně';
       else if (d.includes('dárek') || d.includes('darek') || d.includes('charita') || d.includes('sbírka') || d.includes('sbirka') || d.includes('dar ')) cat = 'Dárky/charita';
-      else if (d.includes('zalando') || d.includes('zara') || d.includes('h&m') || d.includes('outfit') || d.includes('oblečen') || d.includes('oblechn') || d.includes('boty') || d.includes('valmont') || d.includes('silingr') || d.includes('zásilk') || d.includes('zasilk') || d.includes('dracik') || d.includes('alza') || d.includes('czc') || d.includes('mall') || d.includes('ikea') || d.includes('obi') || d.includes('bauhaus') || d.includes('hornbach')) cat = 'Věci';
-      else if (d.includes('výplat') || d.includes('výběr') || d.includes('výplata') || d.includes('vybér') || d.includes('atm') || d.includes('bankomat') || d.includes('vklad') || d.includes('poplatek') || d.includes('správa') || d.includes('sprava') || d.includes('raiffeisen') || d.includes('portyš') || d.includes('portys') || d.includes('servis') || d.includes('lozisko')) cat = 'Výdaje podnikání';
+      else if (d.includes('zalando') || d.includes('zara') || d.includes('h&m') || d.includes('oblečen') || d.includes('boty') || d.includes('valmont') || d.includes('silingr') || d.includes('zásilk') || d.includes('zasilk') || d.includes('dracik') || d.includes('alza') || d.includes('czc') || d.includes('mall') || d.includes('ikea') || d.includes('obi') || d.includes('bauhaus') || d.includes('hornbach')) cat = 'Věci';
+      else if (d.includes('výběr') || d.includes('atm') || d.includes('bankomat') || d.includes('vklad') || d.includes('poplatek') || d.includes('správa') || d.includes('sprava') || d.includes('raiffeisen') || d.includes('portyš') || d.includes('portys') || d.includes('servis') || d.includes('lozisko')) cat = 'Výdaje podnikání';
       else cat = 'Jiné';
     }
 
     return { date: r.date, desc: r.desc, amount: Math.abs(r.amount), type, cat, internal: r.internal || false, cpDisplay: r.cpDisplay || '' };
   });
-}
-
-async function categorizePdf(base64) {
-  throw new Error('Import PDF není podporován z bezpečnostních důvodů prohlížeče. Použij prosím CSV export z internetového bankovnictví.');
 }
 
 function showImportStatus(msg, isError = false) {
@@ -1596,7 +1571,6 @@ function showImportStatus(msg, isError = false) {
   el.style.display = 'block';
 }
 
-// ── IMPORT LEARNING ──────────────────────────────────────
 function loadImportMemory() {
   try { return JSON.parse(localStorage.getItem('importMemory') || '{}'); } catch { return {}; }
 }
@@ -1614,10 +1588,7 @@ function applyImportMemory(txs) {
 }
 function learnFromImport(txs) {
   const mem = loadImportMemory();
-  txs.forEach(tx => {
-    const key = tx.desc.toLowerCase().trim();
-    mem[key] = { type: tx.type, cat: tx.cat };
-  });
+  txs.forEach(tx => { const key = tx.desc.toLowerCase().trim(); mem[key] = { type: tx.type, cat: tx.cat }; });
   saveImportMemory(mem);
 }
 
@@ -1658,18 +1629,19 @@ function renderImportResults() {
       const signBtn = tx.type === 'expense'
         ? `<button onclick="toggleImportSign(${i})" title="${signTitle}" style="background:none;border:none;cursor:pointer;font-weight:700;font-size:13px;color:${signColor};padding:0 4px;border-bottom:1px dashed ${signColor};line-height:1;">${signLabel}</button>`
         : `<span style="font-weight:700;font-size:13px;color:${signColor};padding:0 4px;">${signLabel}</span>`;
-      const learnedDot = tx.learned ? `<span title="Rozpoznáno z předchozího importu" style="color:var(--accent);font-size:10px;">✓</span>` : `<span></span>`;
+      // FIX 4: learnedDot byl deklarován ale nikdy použit — odstraněno
       return `<div class="import-tx-row">
         <input type="checkbox" class="import-tx-check" checked data-idx="${i}">
         <span style="color:var(--muted);white-space:nowrap;">${tx.date.slice(5)}</span>
         <div style="min-width:0;overflow:hidden;">
-          <input type="text" value="${tx.desc}" onchange="importedTxs[${i}].desc=this.value" style="font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;border:none;border-bottom:1px solid var(--border);background:transparent;color:var(--text);outline:none;width:100%;min-width:0;padding:1px 2px;" placeholder="Popis">
+          <input type="text" value="${tx.desc}" onchange="importedTxs[${i}].desc=this.value" style="font-size:11px;border:none;border-bottom:1px solid var(--border);background:transparent;color:var(--text);outline:none;width:100%;min-width:0;padding:1px 2px;" placeholder="Popis">
           ${tx.cpDisplay ? `<div style="font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px;">↳ ${tx.cpDisplay}</div>` : ''}
         </div>
-        <select onchange="importedTxs[${i}].type=this.value;importedTxs[${i}].learned=false;importedTxs[${i}].refund=false;renderImportResults()">${typeOpts}</select>
+        <select onchange="importedTxs[${i}].type=this.value;importedTxs[${i}].cat=CATEGORIES[this.value][0]||'Jiné';importedTxs[${i}].learned=false;importedTxs[${i}].refund=false;renderImportResults()">${typeOpts}</select>
         <select onchange="importedTxs[${i}].cat=this.value;importedTxs[${i}].learned=false;">${opts}</select>
         <span class="import-tx-amount ${isRefund?'income':amtClass}" style="display:flex;align-items:center;gap:2px;text-align:right;">${signBtn}${tx.amount.toLocaleString('cs-CZ')} Kč</span>
       </div>`;
+      // FIX 2: při změně typu se cat automaticky nastaví na první kategorii nového typu
     }).join('');
 }
 
@@ -1684,10 +1656,8 @@ async function confirmImport() {
   const selected = importedTxs.filter((tx, i) => !tx.internal && checks[i]?.checked);
   if (!selected.length) { showImportStatus('Nevybral jsi žádné transakce.', true); return; }
 
-  // Learn from this import
   learnFromImport(selected);
 
-  // Disable button and show progress
   const importBtn = document.querySelector('#importActions .btn-submit');
   if (importBtn) { importBtn.disabled = true; importBtn.textContent = 'Ukládám…'; }
   showImportStatus(`Ukládám ${selected.length} transakcí…`);
@@ -1703,20 +1673,17 @@ async function confirmImport() {
       transactions.push(newTx);
       ok++;
       if (importBtn) importBtn.textContent = `Ukládám… ${ok}/${selected.length}`;
-    } catch(e) {
-      console.error('import add failed:', e);
-    }
+    } catch(e) { console.error('import add failed:', e); }
   }
   setLoading(false);
 
   if (ok > 0) {
     const firstDate = selected[0].date;
-    if (firstDate) selectedYear = new Date(firstDate).getFullYear();
+    if (firstDate) selectedYear = parseDate(firstDate).getFullYear(); // FIX 1
     selectedMonth = -1;
     buildMonthPills();
   }
 
-  // Zavři okno a zobraz výsledek
   document.getElementById('importOverlay').classList.remove('open');
   resetImport();
   render();
