@@ -788,7 +788,10 @@ function addCategory() {
   renderCatTags();
   updateCatSelect();
   updateCatFilterSelect();
-  saveCategories();(idx) {
+  saveCategories();
+}
+
+function removeCategory(idx) {
   const cat = CATEGORIES[sdType][idx];
   const inUse = transactions.some(t => t.type === sdType && t.cat === cat);
   if (inUse) { showError(`Kategorii "${cat}" nelze smazat — je použita v transakcích`); return; }
@@ -796,7 +799,10 @@ function addCategory() {
   renderCatTags();
   updateCatSelect();
   updateCatFilterSelect();
-  saveCategories();() {
+  saveCategories();
+}
+
+async function saveCategories() {
   try {
     await fetch(API_URL, {
       method: 'POST',
