@@ -474,10 +474,16 @@ const fmtShort = n => Math.abs(n).toLocaleString('cs-CZ') + ' Kč';
 // V CET (UTC+1) to je 23:59 předchozího dne → transakce z 1. v měsíci mizí do předchozího.
 // Oprava: vždy přidat T12:00:00 pro lokální poledne.
 function parseDate(dateStr) {
-  // Sheets vrací "2022-12-31T23:00:00.000Z" — bereme jen date part (prvních 10 znaků)
-  // Pak přidáme T12:00:00 pro lokální poledne (fix timezone UTC offset)
-  const datePart = String(dateStr).substring(0, 10);
-  return new Date(datePart + 'T12:00:00');
+  const s = String(dateStr);
+  if (s.length > 10 && s.includes('T')) {
+    // Sheets vrací UTC timestamp, např. "2025-01-31T23:00:00.000Z"
+    // To je ve skutečnosti 2025-02-01 v CET (UTC+1)
+    // Parsujeme jako UTC a vezmeme LOKÁLNÍ datum
+    const d = new Date(s);
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12, 0, 0);
+  }
+  // Vlastní záznamy jsou plain "2025-02-01" → lokální poledne
+  return new Date(s + 'T12:00:00');
 }
 
 // ── API ───────────────────────────────────────────────────
