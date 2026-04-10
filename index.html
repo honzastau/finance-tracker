@@ -495,7 +495,7 @@ async function apiGet() {
     id:     String(r.id),
     type:   String(r.type),
     desc:   String(r.desc),
-    amount: Number(r.amount),
+    amount: Math.round(Number(r.amount)),
     cat:    String(r.cat ?? r.category ?? r.kat ?? r.kategorie ?? ''),
     date:   String(r.date),
   }));
@@ -603,7 +603,7 @@ async function addTransaction() {
   const dEl = document.getElementById('descInput');
   const aEl = document.getElementById('amountInput');
   const desc   = dEl.value.trim();
-  const amount = parseFloat(aEl.value);
+  const amount = Math.round(parseFloat(aEl.value));
   const cat    = document.getElementById('catSelect').value;
   const date   = document.getElementById('dateInput').value;
   dEl.classList.remove('error'); aEl.classList.remove('error');
@@ -1681,7 +1681,7 @@ async function confirmImport() {
   setLoading(true);
   let ok = 0;
   for (const tx of selected) {
-    const finalAmount = tx.type === 'expense' && tx.refund ? -tx.amount : tx.amount;
+    const finalAmount = Math.round(tx.type === 'expense' && tx.refund ? -tx.amount : tx.amount);
     const newTx = { id: String(Date.now() + Math.random()), type: tx.type, desc: tx.desc, amount: finalAmount, cat: tx.cat, date: tx.date };
     try {
       await apiAdd(newTx);
