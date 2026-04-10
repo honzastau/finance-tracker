@@ -474,7 +474,10 @@ const fmtShort = n => Math.abs(n).toLocaleString('cs-CZ') + ' Kč';
 // V CET (UTC+1) to je 23:59 předchozího dne → transakce z 1. v měsíci mizí do předchozího.
 // Oprava: vždy přidat T12:00:00 pro lokální poledne.
 function parseDate(dateStr) {
-  return new Date(dateStr + 'T12:00:00');
+  // Sheets vrací "2022-12-31T23:00:00.000Z" — bereme jen date part (prvních 10 znaků)
+  // Pak přidáme T12:00:00 pro lokální poledne (fix timezone UTC offset)
+  const datePart = String(dateStr).substring(0, 10);
+  return new Date(datePart + 'T12:00:00');
 }
 
 // ── API ───────────────────────────────────────────────────
