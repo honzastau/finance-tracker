@@ -1434,12 +1434,11 @@ async function handleImportFile(file) {
   document.getElementById('importDrop').style.display = 'none';
   showImportStatus('Zpracovávám soubor…');
   try {
-    const text = await new Promise((res, rej) => {
-      const r = new FileReader();
-      r.onload = () => res(r.result);
-      r.onerror = () => rej(new Error('Chyba čtení souboru'));
-      r.readAsText(file, 'UTF-8');
-    });
+    // Některé banky (KB) exportují ve Windows-1250. Zkusíme UTF-8; pokud
+    // vzniknou náhradní znaky (�), přečteme znovu jako Windows-1250.
+    const buf = await file.arrayBuffer();
+    let text = new TextDecoder('utf-8').decode(buf);
+    if (text.includes('�')) text = new TextDecoder('windows-1250').decode(buf);
     const rows = parseCsv(text, file.name);
     if (!rows.length) { showImportStatus('Nenalezeny žádné transakce.', true); document.getElementById('importDrop').style.display='block'; return; }
     showImportStatus(`Kategorizuji ${rows.length} transakcí…`);
@@ -1490,6 +1489,7 @@ function parseCsv(text, filename) {
   const isKartaCS = h.includes('číslo kreditní karty');
   const isBeznyCS = h.includes('číslo účtu') && h.includes('zpráva');
   const isMoneta  = h.includes('iban') && h.includes('zpráva pro příjemce');
+  const isKB      = h.includes('protistrana') && h.includes('datum zauctovani');
 
   const OWN_ACCOUNTS = ['1319720004', '216228979', '258320693', '1319763004', '531533', '520655', '1101083110'];
 
@@ -1525,6 +1525,12 @@ function parseCsv(text, filename) {
       desc = get('Poznámka pro mě') || get('Zpráva pro příjemce') || get('Popis platby') || get('Typ transakce');
       counterpart = get('Číslo protiúčtu');
       counterpartName = get('Název účtu příjemce') || '';
+    } else if (isKB) {
+      date = parseDateStr(get('Datum zauctovani')) || parseDateStr(get('Datum provedeni'));
+      amount = parseAmount(get('Castka'));
+      desc = get('Popis pro me') || get('Zprava pro prijemce') || get('Nazev protiuctu') || get('Typ transakce');
+      counterpart = get('Protistrana');
+      counterpartName = get('Nazev protiuctu') || '';
     } else {
       date = parseDateStr(f[0]) || parseDateStr(f[1]);
       amount = parseAmount(f.find(x => x.match(/^-?[\d\s]+,\d{2}$/)) || '');
