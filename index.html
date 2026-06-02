@@ -225,6 +225,15 @@ header { background:var(--surface); border-bottom:1px solid var(--border); paddi
 <div id="loadingBar" style="position:fixed;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),#e8a838,var(--accent));background-size:200% 100%;animation:shimmer 1.2s infinite linear;z-index:999;opacity:0;transition:opacity 0.2s;"></div>
 <div id="errorToast" style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#c0502a;color:#fff;font-family:'DM Sans',sans-serif;font-size:12px;padding:10px 20px;z-index:999;opacity:0;transition:opacity 0.3s;pointer-events:none;white-space:nowrap;"></div>
 
+<div id="loginOverlay" style="position:fixed;inset:0;z-index:1000;background:var(--bg);display:none;align-items:center;justify-content:center;">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;width:300px;box-shadow:0 12px 40px rgba(26,31,18,0.12);">
+    <div style="font-family:'Geologica',sans-serif;font-weight:800;font-size:13px;letter-spacing:0.18em;text-transform:uppercase;text-align:center;margin-bottom:18px;">Finance Tracker</div>
+    <input id="loginPwd" type="password" class="finput" placeholder="Heslo" autocomplete="current-password" onkeydown="if(event.key==='Enter')submitLogin()" style="margin-bottom:8px;">
+    <div id="loginError" style="color:var(--red);font-size:11px;text-align:center;min-height:14px;margin-bottom:8px;"></div>
+    <button class="btn-submit" onclick="submitLogin()">Přihlásit</button>
+  </div>
+</div>
+
 <header>
   <div class="logo">Finance Tracker</div>
   <div class="hd"></div>
@@ -287,6 +296,9 @@ header { background:var(--surface); border-bottom:1px solid var(--border); paddi
             <input class="cat-add-input" id="catAddInput" type="text" placeholder="Nová kategorie..." onkeydown="if(event.key==='Enter')addCategory()">
             <button class="cat-add-btn" onclick="addCategory()">+ Přidat</button>
           </div>
+        </div>
+        <div style="border-top:1px solid var(--border);padding-top:12px;">
+          <button onclick="logout()" style="background:none;border:1px solid var(--border);color:var(--muted);font-family:'DM Sans',sans-serif;font-size:11px;padding:7px 12px;border-radius:8px;cursor:pointer;width:100%;">Odhlásit se</button>
         </div>
       </div>
     </div>
@@ -459,6 +471,9 @@ const ICONS = {
 
 const API_URL = 'https://script.google.com/macros/s/AKfycbx_i1L-641uH9CMnk6SidRlTE3PjCbEMGZWFupqZGjZ7anPOEzw2q_U50K9vy_vsbrENg/exec';
 
+let AUTH_TOKEN = localStorage.getItem('ftToken') || '';
+const authParam = () => '&token=' + encodeURIComponent(AUTH_TOKEN);
+
 let transactions  = [];
 let currentType   = 'income';
 let currentFilter = 'all';
@@ -488,7 +503,7 @@ function parseDate(dateStr) {
 
 // ── API ───────────────────────────────────────────────────
 async function apiGet() {
-  const res  = await fetch(API_URL + '?action=getAll');
+  const res  = await fetch(API_URL + '?action=getAll' + authParam());
   const data = await res.json();
   if (!data.ok) throw new Error(data.error);
   return data.data.map(r => ({
@@ -502,14 +517,14 @@ async function apiGet() {
 }
 
 async function apiAdd(tx) {
-  const url = API_URL + '?action=add&tx=' + encodeURIComponent(JSON.stringify(tx));
+  const url = API_URL + '?action=add&tx=' + encodeURIComponent(JSON.stringify(tx)) + authParam();
   const res  = await fetch(url);
   const data = await res.json();
   if (!data.ok) throw new Error(data.error);
 }
 
 async function apiDelete(id) {
-  const url = API_URL + '?action=delete&id=' + encodeURIComponent(id);
+  const url = API_URL + '?action=delete&id=' + encodeURIComponent(id) + authParam();
   const res  = await fetch(url);
   const data = await res.json();
   if (!data.ok) throw new Error(data.error);
@@ -816,14 +831,14 @@ async function saveCategories() {
     await fetch(API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({ action: 'saveCategories', cats: CATEGORIES })
+      body: JSON.stringify({ action: 'saveCategories', cats: CATEGORIES, token: AUTH_TOKEN })
     });
   } catch(e) { console.warn('saveCategories failed:', e); }
 }
 
 async function loadCategories() {
   try {
-    const res = await fetch(API_URL + '?action=getCategories');
+    const res = await fetch(API_URL + '?action=getCategories' + authParam());
     const data = await res.json();
     if (data.ok && data.data) {
       const c = data.data;
@@ -1311,7 +1326,7 @@ async function saveTxCat(id, newCat) {
     const res = await fetch(API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({ action: 'updateCat', id: tx.id, cat: newCat })
+      body: JSON.stringify({ action: 'updateCat', id: tx.id, cat: newCat, token: AUTH_TOKEN })
     });
     const data = await res.json();
     if (!data.ok) throw new Error(data.error);
@@ -1338,7 +1353,7 @@ async function saveTxDesc(id, newDesc) {
     const res = await fetch(API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({ action: 'updateDesc', id: tx.id, desc: newDesc })
+      body: JSON.stringify({ action: 'updateDesc', id: tx.id, desc: newDesc, token: AUTH_TOKEN })
     });
     const data = await res.json();
     if (!data.ok) throw new Error(data.error || 'updateDesc failed');
@@ -1379,6 +1394,7 @@ async function init() {
     const [, txs] = await Promise.all([loadCategories(), apiGet()]);
     transactions = txs;
   } catch(e) {
+    if (e && e.message === 'unauthorized') { setLoading(false); throw e; }
     showError('Nepodařilo se načíst data: ' + e.message);
     transactions = [];
   } finally {
@@ -1712,7 +1728,48 @@ async function confirmImport() {
   if (ok > 0) showError(`✓ Importováno ${ok} transakcí`);
 }
 
-init();
+// ── LOGIN ────────────────────────────────────────────────
+function showLoginScreen(msg) {
+  document.getElementById('loginOverlay').style.display = 'flex';
+  document.getElementById('loginError').textContent = msg || '';
+  setTimeout(() => document.getElementById('loginPwd').focus(), 50);
+}
+async function submitLogin() {
+  const pwd = document.getElementById('loginPwd').value;
+  if (!pwd) return;
+  AUTH_TOKEN = pwd;
+  localStorage.setItem('ftToken', pwd);
+  document.getElementById('loginError').textContent = '';
+  try {
+    await init();
+    document.getElementById('loginOverlay').style.display = 'none';
+  } catch(e) {
+    AUTH_TOKEN = '';
+    localStorage.removeItem('ftToken');
+    showLoginScreen('Špatné heslo');
+  }
+}
+function logout() {
+  localStorage.removeItem('ftToken');
+  location.reload();
+}
+
+// Boot: s uloženým tokenem rovnou načti, jinak ukaž přihlášení
+if (AUTH_TOKEN) {
+  init()
+    .then(() => { document.getElementById('loginOverlay').style.display = 'none'; })
+    .catch(e => {
+      if (e && e.message === 'unauthorized') {
+        AUTH_TOKEN = '';
+        localStorage.removeItem('ftToken');
+        showLoginScreen();
+      } else {
+        document.getElementById('loginOverlay').style.display = 'none';
+      }
+    });
+} else {
+  showLoginScreen();
+}
 </script>
 </body>
 </html>
