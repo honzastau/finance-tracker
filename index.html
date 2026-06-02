@@ -1492,21 +1492,21 @@ function parseCsv(text, filename) {
     let date, desc, amount, counterpart, counterpartName;
 
     if (isKartaCS) {
-      date = parseDateStr(get('Datum transakce'));
+      date = parseDateStr(get('Datum transakce')) || parseDateStr(get('Datum zaúčtování'));
       amount = parseAmount(get('Zaúčtovaná částka'));
       desc = get('Název Obchodníka') || get('Popis/Místo transakce') || get('Typ transakce');
       counterpart = '';
       counterpartName = get('Název Obchodníka') || get('Město') || '';
     } else if (isBeznyCS) {
-      date = parseDateStr(get('Datum provedení'));
+      date = parseDateStr(get('Datum provedení')) || parseDateStr(get('Datum zaúčtování'));
       amount = parseAmount(get('Zaúčtovaná částka'));
-      desc = get('Zpráva') || get('Poznámka') || get('Název protiúčtu') || get('Typ transakce');
+      desc = get('Poznámka') || get('Zpráva') || get('Název protiúčtu') || get('Typ transakce');
       counterpart = get('Číslo protiúčtu');
       counterpartName = get('Název protiúčtu') || '';
     } else if (isMoneta) {
-      date = parseDateStr(get('Splatnost'));
+      date = parseDateStr(get('Splatnost')) || parseDateStr(get('Odesláno'));
       amount = parseAmount(get('Částka'));
-      desc = get('Zpráva pro příjemce') || get('Poznámka pro mě') || get('Popis platby') || get('Typ transakce');
+      desc = get('Poznámka pro mě') || get('Zpráva pro příjemce') || get('Popis platby') || get('Typ transakce');
       counterpart = get('Číslo protiúčtu');
       counterpartName = get('Název účtu příjemce') || '';
     } else {
@@ -1575,7 +1575,7 @@ async function categorizeTxs(rows) {
       else cat = 'Jiné';
     }
 
-    return { date: r.date, desc: r.desc, amount: Math.abs(r.amount), type, cat, internal: r.internal || false, cpDisplay: r.cpDisplay || '' };
+    return { date: r.date, desc: r.desc, amount: Math.abs(r.amount), type, cat, dir: r.amount > 0 ? 'in' : 'out', internal: r.internal || false, cpDisplay: r.cpDisplay || '' };
   });
 }
 
@@ -1597,8 +1597,15 @@ function applyImportMemory(txs) {
   return txs.map(tx => {
     if (tx.internal) return tx;
     const key = tx.desc.toLowerCase().trim();
-    if (mem[key]) return { ...tx, type: mem[key].type, cat: mem[key].cat, learned: true };
-    return tx;
+    const remembered = mem[key];
+    if (!remembered) return tx;
+    // Znaménko částky je rozhodující pro příjem/výdaj — paměť nesmí přehodit
+    // příchozí platbu (+) na výdaj ani odchozí (−) na příjem. Časté u obecných
+    // popisů jako "OKAMŽITÁ ÚHRADA", které mají příjmy i výdaje současně.
+    const incompatible = (tx.dir === 'in'  && remembered.type === 'expense') ||
+                         (tx.dir === 'out' && remembered.type === 'income');
+    if (incompatible) return tx;
+    return { ...tx, type: remembered.type, cat: remembered.cat, learned: true };
   });
 }
 function learnFromImport(txs) {
