@@ -1606,6 +1606,15 @@ function resetImport() {
   document.getElementById('importActions').style.display = 'none';
   document.getElementById('importDrop').style.display = 'block';
   document.getElementById('importFile').value = '';
+  resetImportButton();
+}
+
+// Bez tohohle zůstalo tlačítko po dokončeném importu disabled s textem
+// "Ukládám…" a seznam vyšisovaný — další výpis pak nešlo uložit.
+function resetImportButton() {
+  document.getElementById('importResults').style.opacity = '1';
+  const btn = document.querySelector('#importActions .btn-submit');
+  if (btn) { btn.disabled = false; btn.textContent = 'Importovat vybrané'; }
 }
 
 async function handleImportFile(file) {
@@ -1628,6 +1637,7 @@ async function handleImportFile(file) {
     const fresh = markDuplicates(applyImportMemory(await categorizeTxs(rows)));
     importedTxs = importedTxs.length ? importedTxs.concat(fresh) : fresh;
     renderImportResults();
+    resetImportButton();
   } catch(e) {
     showImportStatus('Chyba: ' + e.message, true);
     document.getElementById('importDrop').style.display = 'block';
