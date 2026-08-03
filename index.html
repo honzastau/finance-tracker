@@ -502,9 +502,33 @@ function parseDate(dateStr) {
 }
 
 // ── API ───────────────────────────────────────────────────
+// Apps Script pod zátěží občas místo JSON vrátí HTML chybovou stránku
+// (limit současných spuštění) — res.json() by na tom spadlo s kryptickou
+// "Unexpected token '<'". Načteme jako text a parsujeme sami, ať jde chybu
+// rozpoznat a (u čtení) zkusit znovu.
+async function fetchJson(url, opts) {
+  const res = await fetch(url, opts);
+  const text = await res.text();
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error('Neplatná odpověď serveru (přetížený Apps Script?)');
+  }
+}
+
+async function fetchJsonRetry(url, opts, attempts = 3) {
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    try {
+      return await fetchJson(url, opts);
+    } catch(e) {
+      if (attempt === attempts) throw e;
+      await new Promise(r => setTimeout(r, 500 * attempt));
+    }
+  }
+}
+
 async function apiGet() {
-  const res  = await fetch(API_URL + '?action=getAll' + authParam());
-  const data = await res.json();
+  const data = await fetchJsonRetry(API_URL + '?action=getAll' + authParam());
   if (!data.ok) throw new Error(data.error);
   return data.data.map(r => ({
     id:     String(r.id),
@@ -518,15 +542,13 @@ async function apiGet() {
 
 async function apiAdd(tx) {
   const url = API_URL + '?action=add&tx=' + encodeURIComponent(JSON.stringify(tx)) + authParam();
-  const res  = await fetch(url);
-  const data = await res.json();
+  const data = await fetchJson(url);
   if (!data.ok) throw new Error(data.error);
 }
 
 async function apiDelete(id) {
   const url = API_URL + '?action=delete&id=' + encodeURIComponent(id) + authParam();
-  const res  = await fetch(url);
-  const data = await res.json();
+  const data = await fetchJson(url);
   if (!data.ok) throw new Error(data.error);
 }
 
@@ -838,8 +860,7 @@ async function saveCategories() {
 
 async function loadCategories() {
   try {
-    const res = await fetch(API_URL + '?action=getCategories' + authParam());
-    const data = await res.json();
+    const data = await fetchJsonRetry(API_URL + '?action=getCategories' + authParam());
     if (data.ok && data.data) {
       const c = data.data;
       CATEGORIES.income  = c.income  || CATEGORIES.income;
@@ -1386,19 +1407,50 @@ function hideBarTip() {
   document.removeEventListener('mousemove', moveTip);
 }
 
+// ── CACHE ────────────────────────────────────────────────
+// Apps Script umí odpovídat i několik sekund — místo aby uživatel při
+// každém otevření/refreshi appky čekal na plné stažení, zobrazíme hned
+// poslední známá data z localStorage a čerstvou verzi donačteme na pozadí.
+const CACHE_KEY = 'ftCache';
+function loadCache() {
+  try { return JSON.parse(localStorage.getItem(CACHE_KEY) || 'null'); } catch { return null; }
+}
+function saveCache(txs, cats) {
+  try { localStorage.setItem(CACHE_KEY, JSON.stringify({ transactions: txs, categories: cats })); } catch {}
+}
+
 // ── INIT ─────────────────────────────────────────────────
 async function init() {
   document.getElementById('dateInput').value = new Date().toISOString().split('T')[0];
   buildMonthPills();
+
+  const cache = loadCache();
+  if (cache) {
+    transactions = cache.transactions;
+    if (cache.categories) {
+      CATEGORIES.income  = cache.categories.income  || CATEGORIES.income;
+      CATEGORIES.expense = cache.categories.expense || CATEGORIES.expense;
+      CATEGORIES.savings = cache.categories.savings || CATEGORIES.savings;
+    }
+    updateCatSelect();
+    updateLcCatSelect();
+    updateCatFilterSelect();
+    render();
+  } else {
+    document.getElementById('txList').innerHTML = '<div class="empty-tx">Načítám data…</div>';
+  }
+
   setLoading(true);
-  document.getElementById('txList').innerHTML = '<div class="empty-tx">Načítám data…</div>';
   try {
     const [, txs] = await Promise.all([loadCategories(), apiGet()]);
     transactions = txs;
+    saveCache(txs, CATEGORIES);
   } catch(e) {
     if (e && e.message === 'unauthorized') { setLoading(false); throw e; }
-    showError('Nepodařilo se načíst data: ' + e.message);
-    transactions = [];
+    showError(cache
+      ? 'Nepodařilo se aktualizovat data, zobrazena poslední uložená verze: ' + e.message
+      : 'Nepodařilo se načíst data: ' + e.message);
+    if (!cache) transactions = [];
   } finally {
     setLoading(false);
   }
