@@ -89,9 +89,13 @@ function doGet(e) {
       // [id, type, desc, amount, cat, date]
       const data = rows.map(function(row) {
         const d = row[5];
+        // Pozor: `d instanceof Date` tady vrací false, i když v buňce Date je
+        // (jiný realm). Poznáme ho podle rozhraní, jinak by se poslal
+        // toString() Date objektu a klient by ho nepřečetl.
+        const isDate = d && typeof d.getFullYear === 'function';
         return [
           String(row[0]), row[1], row[2], row[3], row[4],
-          d instanceof Date ? Utilities.formatDate(d, tz, 'yyyy-MM-dd') : String(d)
+          isDate ? Utilities.formatDate(d, tz, 'yyyy-MM-dd') : String(d)
         ];
       });
 

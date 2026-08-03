@@ -512,7 +512,12 @@ function parseDate(dateStr) {
     return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12, 0, 0);
   }
   // Vlastní záznamy jsou plain "2025-02-01" → lokální poledne
-  return new Date(s + 'T12:00:00');
+  const d = new Date(s + 'T12:00:00');
+  if (!isNaN(d)) return d;
+  // Neznámý tvar (např. toString() Date objektu ze Sheets) — radši ho zkusíme
+  // přečíst přímo, než abychom vrátili Invalid Date a rozbili celý přehled.
+  const fallback = new Date(s);
+  return isNaN(fallback) ? new Date(0) : new Date(fallback.getFullYear(), fallback.getMonth(), fallback.getDate(), 12, 0, 0);
 }
 
 // ── API ───────────────────────────────────────────────────
