@@ -1663,7 +1663,7 @@ async function handleImportFile(file) {
     showImportStatus(`Kategorizuji ${rows.length} transakcí…`);
     // Pokud tu ještě zbývají neuložené transakce z předchozího pokusu
     // (viz confirmImport), nezahazujeme je — připojíme nové k nim.
-    const fresh = markDuplicates(applyImportMemory(await categorizeTxs(rows)));
+    const fresh = applyImportMemory(await categorizeTxs(rows)).map(tx => ({ ...tx, checked: !tx.internal }));
     importedTxs = importedTxs.length ? importedTxs.concat(fresh) : fresh;
     renderImportResults();
     resetImportButton();
@@ -1859,38 +1859,11 @@ function learnFromImport(txs) {
   saveImportMemory(mem);
 }
 
-function normDesc(s) { return (s || '').toLowerCase().trim(); }
-// Sheets ukládá datum jako Date buňku, ne string, takže se z API vrací jako
-// UTC timestamp (viz parseDate) — musíme obě strany převést na stejný tvar,
-// jinak by se "2026-01-27" a "2026-01-27T23:00:00.000Z" nikdy neshodovaly.
-function dateKey(dateStr) {
-  const d = parseDate(dateStr);
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-}
-
-// Duplicity vznikají, když se rozsahy dvou výpisů překryjí (běžné u bankovních
-// exportů) — stejná transakce se pak naimportuje znovu jako nový řádek, protože
-// Code.gs při 'add' jen appendRow bez kontroly. Srovnáváme datum+částku+popis
-// proti už uloženým transakcím i proti ostatním řádkům ve stejném souboru.
-// Typ musí být součástí klíče. Příjem a výdaj stejného dne, částky i popisu
-// je běžná legitimní dvojice (např. výběr z kreditky přes Revolut: peníze
-// přijdou a hned odejdou) — bez typu by se jedna z nich odškrtla jako
-// duplicita a při importu by tiše propadla.
-function dupKey(date, type, amount, desc) {
-  return `${dateKey(date)}|${type}|${Math.abs(Math.round(amount))}|${normDesc(desc)}`;
-}
-
-function markDuplicates(txs) {
-  const existing = new Set(transactions.map(t => dupKey(t.date, t.type, t.amount, t.desc)));
-  const seen = new Set();
-  return txs.map(tx => {
-    if (tx.internal) return tx;
-    const key = dupKey(tx.date, tx.type, tx.amount, tx.desc);
-    const duplicate = existing.has(key) || seen.has(key);
-    seen.add(key);
-    return { ...tx, duplicate, checked: !duplicate };
-  });
-}
+// Detekce duplicit tu záměrně není. Porovnání podle data, částky a popisu
+// neodliší omylem zopakovaný výpis od skutečně opakovaného nákupu — a několik
+// stejných transakcí v jeden den je běžné (dvě kávy, dvě jízdenky). Falešný
+// poplach by znamenal, že reálná transakce tiše propadne, což je horší než
+// duplicitní řádek, který je v seznamu vidět a jde smazat.
 
 function renderImportResults() {
   document.getElementById('importStatus').style.display = 'none';
@@ -1902,10 +1875,9 @@ function renderImportResults() {
   const normal = importedTxs.filter(tx => !tx.internal);
   const internal = importedTxs.filter(tx => tx.internal);
   const learned = normal.filter(tx => tx.learned).length;
-  const dupCount = normal.filter(tx => tx.duplicate).length;
 
   el.innerHTML = `<div style="font-size:11px;color:var(--muted);margin-bottom:4px;">
-    Nalezeno <strong>${normal.length}</strong> transakcí k importu${learned ? ` · <span style="color:var(--accent)">✓ ${learned} rozpoznáno z předchozích importů</span>` : ''}${dupCount ? ` · <span style="color:var(--red)">⚠ ${dupCount} možných duplicit (předzaškrtnuto jako nevybrané)</span>` : ''}${internal.length ? ` · ${internal.length} přesunů mezi účty` : ''}:
+    Nalezeno <strong>${normal.length}</strong> transakcí k importu${learned ? ` · <span style="color:var(--accent)">✓ ${learned} rozpoznáno z předchozích importů</span>` : ''}${internal.length ? ` · ${internal.length} přesunů mezi účty` : ''}:
   </div>` +
     importedTxs.map((tx, i) => {
       if (tx.internal) {
@@ -1933,12 +1905,12 @@ function renderImportResults() {
       // FIX 4: learnedDot byl deklarován ale nikdy použit — odstraněno
       // Zaškrtnutí se čte z tx.checked (ne natvrdo z HTML) — jinak by se při
       // každém re-renderu (např. po změně typu) ztratilo ruční odškrtnutí.
-      return `<div class="import-tx-row"${tx.duplicate ? ' style="background:var(--surface2);"' : ''}>
+      return `<div class="import-tx-row">
         <input type="checkbox" class="import-tx-check" ${tx.checked ? 'checked' : ''} onchange="importedTxs[${i}].checked=this.checked" data-idx="${i}">
         <span style="color:var(--muted);white-space:nowrap;">${tx.date.slice(5)}</span>
         <div style="min-width:0;overflow:hidden;">
           <input type="text" value="${tx.desc}" onchange="importedTxs[${i}].desc=this.value" style="font-size:11px;border:none;border-bottom:1px solid var(--border);background:transparent;color:var(--text);outline:none;width:100%;min-width:0;padding:1px 2px;" placeholder="Popis">
-          ${tx.duplicate ? `<div style="font-size:10px;color:var(--red);font-weight:600;white-space:nowrap;margin-top:1px;">⚠ možná už existuje</div>` : (tx.cpDisplay ? `<div style="font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px;">↳ ${tx.cpDisplay}</div>` : '')}
+          ${tx.cpDisplay ? `<div style="font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px;">↳ ${tx.cpDisplay}</div>` : ''}
         </div>
         <select onchange="importedTxs[${i}].type=this.value;importedTxs[${i}].cat=CATEGORIES[this.value][0]||'Jiné';importedTxs[${i}].learned=false;importedTxs[${i}].refund=false;renderImportResults()">${typeOpts}</select>
         <select onchange="importedTxs[${i}].cat=this.value;importedTxs[${i}].learned=false;">${opts}</select>
