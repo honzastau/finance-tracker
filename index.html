@@ -139,6 +139,9 @@ header { background:var(--surface); border-bottom:1px solid var(--border); paddi
 .btn-settings { background:none; border:1px solid var(--border); color:var(--muted); width:34px; height:34px; border-radius:8px; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:15px; transition:all 0.15s; }
 .btn-settings:hover { border-color:var(--accent); color:var(--accent); background:var(--accent-light); }
 .btn-settings.open { border-color:var(--accent); color:var(--accent); background:var(--accent-light); }
+.btn-settings:disabled { opacity:0.5; cursor:default; }
+.btn-settings.spin { animation:ftspin 0.8s linear infinite; }
+@keyframes ftspin { to { transform:rotate(360deg); } }
 .settings-dropdown { position:absolute; top:calc(100% + 8px); right:0; width:360px; background:var(--surface); border:1px solid var(--border); border-radius:14px; box-shadow:0 8px 28px rgba(26,31,18,0.12); z-index:300; opacity:0; pointer-events:none; transform:translateY(-6px); transition:opacity 0.18s, transform 0.18s cubic-bezier(0.4,0,0.2,1); }
 .settings-dropdown.open { opacity:1; pointer-events:all; transform:translateY(0); }
 .sd-header { padding:11px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
@@ -275,6 +278,10 @@ header { background:var(--surface); border-bottom:1px solid var(--border); paddi
         <button class="btn-submit" onclick="addTransaction()">Přidat transakci</button>
       </div>
     </div>
+  </div>
+
+  <div class="settings-wrap">
+    <button class="btn-settings" id="btnRefresh" onclick="forceRefresh()" title="Načíst znovu ze serveru (po ruční editaci v Google Sheets)">⟳</button>
   </div>
 
   <div class="settings-wrap">
@@ -485,6 +492,9 @@ let isLoading     = false;
 // značky vypadá stará cache jako aktuální stav — smazané řádky se "vrátí"
 // a nově uložené chybí.
 let dataStale     = false;
+// Revize dat na serveru. Posílá se s dotazem; když se shoduje, server data
+// vůbec neposílá a start je otázka desetin sekundy.
+let dataRev       = null;
 
 const fmtShort = n => Math.abs(n).toLocaleString('cs-CZ') + ' Kč';
 
@@ -510,13 +520,24 @@ function parseDate(dateStr) {
 // (limit současných spuštění) — res.json() by na tom spadlo s kryptickou
 // "Unexpected token '<'". Načteme jako text a parsujeme sami, ať jde chybu
 // rozpoznat a (u čtení) zkusit znovu.
-async function fetchJson(url, opts) {
-  const res = await fetch(url, opts);
-  const text = await res.text();
+// Request umí viset i minuty — bez timeoutu appka čeká, dokud to nevzdá
+// prohlížeč. Radši to utneme a zkusíme znovu.
+async function fetchJson(url, opts, timeoutMs = 20000) {
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), timeoutMs);
   try {
-    return JSON.parse(text);
-  } catch {
-    throw new Error('Neplatná odpověď serveru (přetížený Apps Script?)');
+    const res = await fetch(url, { ...opts, signal: ctl.signal });
+    const text = await res.text();
+    try {
+      return JSON.parse(text);
+    } catch {
+      throw new Error('Neplatná odpověď serveru (přetížený Apps Script?)');
+    }
+  } catch(e) {
+    if (e.name === 'AbortError') throw new Error(`Server neodpověděl do ${Math.round(timeoutMs/1000)} s`);
+    throw e;
+  } finally {
+    clearTimeout(timer);
   }
 }
 
@@ -526,28 +547,49 @@ async function fetchJsonRetry(url, opts, attempts = 3) {
       return await fetchJson(url, opts);
     } catch(e) {
       if (attempt === attempts) throw e;
-      await new Promise(r => setTimeout(r, 500 * attempt));
+      // Exponenciálně s náhodným rozptylem — když selže víc requestů naráz,
+      // ať se nevrátí všechny ve stejný okamžik a nezahltí script znovu.
+      await new Promise(r => setTimeout(r, 400 * Math.pow(2, attempt - 1) + Math.random() * 300));
     }
   }
 }
 
-async function apiGet() {
-  const data = await fetchJsonRetry(API_URL + '?action=getAll' + authParam());
-  if (!data.ok) throw new Error(data.error);
-  return data.data.map(r => ({
+// Řádek chodí kompaktně jako pole [id, type, desc, amount, cat, date]. Starší
+// nasazení posílá objekty s klíči, takže zvládneme oba tvary — appka na Pages
+// se aktualizuje jindy než Apps Script.
+function decodeTx(r) {
+  if (Array.isArray(r)) {
+    return {
+      id: String(r[0]), type: String(r[1]), desc: String(r[2]),
+      amount: Math.round(Number(r[3])), cat: String(r[4] ?? ''), date: String(r[5])
+    };
+  }
+  return {
     id:     String(r.id),
     type:   String(r.type),
     desc:   String(r.desc),
     amount: Math.round(Number(r.amount)),
     cat:    String(r.cat ?? r.category ?? r.kat ?? r.kategorie ?? ''),
     date:   String(r.date),
-  }));
+  };
+}
+
+// Vrací { unchanged } když klient už má aktuální revizi, jinak { txs, cats, rev }.
+async function apiGet(knownRev, force) {
+  let url = API_URL + '?action=getAll' + authParam();
+  if (knownRev && !force) url += '&rev=' + encodeURIComponent(knownRev);
+  if (force) url += '&force=1';
+  const data = await fetchJsonRetry(url);
+  if (!data.ok) throw new Error(data.error);
+  if (data.unchanged) return { unchanged: true, rev: data.rev };
+  return { txs: data.data.map(decodeTx), cats: data.cats || null, rev: data.rev || null };
 }
 
 async function apiAdd(tx) {
   const url = API_URL + '?action=add&tx=' + encodeURIComponent(JSON.stringify(tx)) + authParam();
   const data = await fetchJson(url);
   if (!data.ok) throw new Error(data.error);
+  return data;
 }
 
 // Celý import jedním requestem. Server přeskočí id, která už zná, takže
@@ -566,6 +608,14 @@ async function apiDelete(id) {
   const url = API_URL + '?action=delete&id=' + encodeURIComponent(id) + authParam();
   const data = await fetchJson(url);
   if (!data.ok) throw new Error(data.error);
+  return data;
+}
+
+// Po zápisu si převezmeme novou revizi a uložíme cache. Bez toho by cache
+// zůstala na staré revizi a příští start by zbytečně stahoval všechno znovu.
+function syncAfterWrite(resp) {
+  if (resp && resp.rev) dataRev = resp.rev;
+  saveCache(transactions, CATEGORIES);
 }
 
 // FIX 5: setLoading — pouze disabluje tlačítko v otevřeném add dropdownu,
@@ -677,7 +727,7 @@ async function addTransaction() {
 
   try {
     setLoading(true);
-    await apiAdd(tx);
+    syncAfterWrite(await apiAdd(tx));
   } catch(e) {
     showError('Chyba při ukládání: ' + e.message);
     transactions = transactions.filter(t => t.id !== tx.id);
@@ -694,7 +744,7 @@ async function deleteTransaction(id) {
   render();
   try {
     setLoading(true);
-    await apiDelete(sid);
+    syncAfterWrite(await apiDelete(sid));
   } catch(e) {
     showError('Chyba při mazání: ' + e.message);
     transactions = backup;
@@ -1430,10 +1480,55 @@ function hideBarTip() {
 // poslední známá data z localStorage a čerstvou verzi donačteme na pozadí.
 const CACHE_KEY = 'ftCache';
 function loadCache() {
-  try { return JSON.parse(localStorage.getItem(CACHE_KEY) || 'null'); } catch { return null; }
+  try {
+    const c = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
+    // Poškozenou cache raději zahodíme — jinak by appka zůstala rozbitá i po
+    // reloadu a šlo by to spravit jen ručním čištěním localStorage.
+    if (!c || !Array.isArray(c.transactions)) return null;
+    return c;
+  } catch { return null; }
 }
 function saveCache(txs, cats) {
-  try { localStorage.setItem(CACHE_KEY, JSON.stringify({ transactions: txs, categories: cats })); } catch {}
+  try { localStorage.setItem(CACHE_KEY, JSON.stringify({ transactions: txs, categories: cats, rev: dataRev })); } catch {}
+}
+
+function applyCats(cats) {
+  if (!cats) return;
+  CATEGORIES.income  = cats.income  || CATEGORIES.income;
+  CATEGORIES.expense = cats.expense || CATEGORIES.expense;
+  CATEGORIES.savings = cats.savings || CATEGORIES.savings;
+}
+
+function refreshCatSelects() {
+  updateCatSelect();
+  updateLcCatSelect();
+  updateCatFilterSelect();
+}
+
+// Revizi zvyšují jen zápisy přes appku — po ruční editaci v Google Sheets
+// je tohle jediná cesta, jak si vynutit čerstvá data.
+async function forceRefresh() {
+  const btn = document.getElementById('btnRefresh');
+  if (btn) { btn.disabled = true; btn.classList.add('spin'); }
+  setLoading(true);
+  try {
+    const res = await apiGet(null, true);
+    transactions = res.txs;
+    dataRev = res.rev;
+    applyCats(res.cats);
+    dataStale = false;
+    saveCache(transactions, CATEGORIES);
+    refreshCatSelects();
+    render();
+    showError(`✓ Načteno ${transactions.length} transakcí`);
+  } catch(e) {
+    dataStale = true;
+    render();
+    showError('Načtení selhalo: ' + e.message);
+  } finally {
+    setLoading(false);
+    if (btn) { btn.disabled = false; btn.classList.remove('spin'); }
+  }
 }
 
 // ── INIT ─────────────────────────────────────────────────
@@ -1444,14 +1539,9 @@ async function init() {
   const cache = loadCache();
   if (cache) {
     transactions = cache.transactions;
-    if (cache.categories) {
-      CATEGORIES.income  = cache.categories.income  || CATEGORIES.income;
-      CATEGORIES.expense = cache.categories.expense || CATEGORIES.expense;
-      CATEGORIES.savings = cache.categories.savings || CATEGORIES.savings;
-    }
-    updateCatSelect();
-    updateLcCatSelect();
-    updateCatFilterSelect();
+    dataRev = cache.rev || null;
+    applyCats(cache.categories);
+    refreshCatSelects();
     render();
   } else {
     document.getElementById('txList').innerHTML = '<div class="empty-tx">Načítám data…</div>';
@@ -1459,10 +1549,15 @@ async function init() {
 
   setLoading(true);
   try {
-    const [, txs] = await Promise.all([loadCategories(), apiGet()]);
-    transactions = txs;
+    // Kategorie chodí rovnou s daty, takže jeden request místo dvou.
+    const res = await apiGet(dataRev);
+    if (!res.unchanged) {
+      transactions = res.txs;
+      applyCats(res.cats);
+    }
+    dataRev = res.rev || dataRev;
     dataStale = false;
-    saveCache(txs, CATEGORIES);
+    saveCache(transactions, CATEGORIES);
   } catch(e) {
     if (e && e.message === 'unauthorized') { setLoading(false); throw e; }
     dataStale = !!cache;
@@ -1473,9 +1568,7 @@ async function init() {
   } finally {
     setLoading(false);
   }
-  updateCatSelect();
-  updateLcCatSelect();
-  updateCatFilterSelect();
+  refreshCatSelects();
 
   document.getElementById('txList').addEventListener('change', function(e) {
     const sel = e.target.closest('.tx-cat-select');
@@ -1837,7 +1930,12 @@ async function confirmImport() {
     // Stav čteme ze serveru, ne z lokálního odhadu — jinak se UI rozejde
     // s tabulkou, když se ztratí odpověď na zápis, který proběhl.
     try {
-      transactions = await apiGet();
+      // force: revize se sice zápisem zvýšila, ale nechceme se spoléhat na to,
+      // že ji server v odpovědi na addBatch stihl vrátit.
+      const res = await apiGet(null, true);
+      transactions = res.txs;
+      dataRev = res.rev;
+      applyCats(res.cats);
       dataStale = false;
       saveCache(transactions, CATEGORIES);
     } catch(e) {
