@@ -481,6 +481,10 @@ let currentCatFilter = '__all__';
 let selectedYear  = new Date().getFullYear();
 let selectedMonth = new Date().getMonth();
 let isLoading     = false;
+// Zobrazujeme data z cache, protože načtení ze serveru selhalo. Bez trvalé
+// značky vypadá stará cache jako aktuální stav — smazané řádky se "vrátí"
+// a nově uložené chybí.
+let dataStale     = false;
 
 const fmtShort = n => Math.abs(n).toLocaleString('cs-CZ') + ' Kč';
 
@@ -544,6 +548,18 @@ async function apiAdd(tx) {
   const url = API_URL + '?action=add&tx=' + encodeURIComponent(JSON.stringify(tx)) + authParam();
   const data = await fetchJson(url);
   if (!data.ok) throw new Error(data.error);
+}
+
+// Celý import jedním requestem. Server přeskočí id, která už zná, takže
+// opakovaný pokus po ztracené odpovědi nezapíše transakce podruhé.
+async function apiAddBatch(txs) {
+  const data = await fetchJson(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify({ action: 'addBatch', txs, token: AUTH_TOKEN })
+  });
+  if (!data.ok) throw new Error(data.error);
+  return data;
 }
 
 async function apiDelete(id) {
@@ -1127,7 +1143,8 @@ function render() {
   document.getElementById('statIncomeSub').innerHTML  = fmtSub(income,  prevIncome,  true);
   document.getElementById('statExpenseSub').innerHTML = fmtSub(expense, prevExpense, false);
 
-  document.getElementById('txCount').textContent = `(${txs.length})`;
+  document.getElementById('txCount').innerHTML = `(${txs.length})` +
+    (dataStale ? ` <span style="color:var(--red);font-weight:600;">⚠ neaktuální data — nepodařilo se spojit se serverem</span>` : '');
 
   renderChart();
   renderLineChart();
@@ -1444,9 +1461,11 @@ async function init() {
   try {
     const [, txs] = await Promise.all([loadCategories(), apiGet()]);
     transactions = txs;
+    dataStale = false;
     saveCache(txs, CATEGORIES);
   } catch(e) {
     if (e && e.message === 'unauthorized') { setLoading(false); throw e; }
+    dataStale = !!cache;
     showError(cache
       ? 'Nepodařilo se aktualizovat data, zobrazena poslední uložená verze: ' + e.message
       : 'Nepodařilo se načíst data: ' + e.message);
@@ -1496,7 +1515,10 @@ async function handleImportFile(file) {
     const rows = parseCsv(text, file.name);
     if (!rows.length) { showImportStatus('Nenalezeny žádné transakce.', true); document.getElementById('importDrop').style.display='block'; return; }
     showImportStatus(`Kategorizuji ${rows.length} transakcí…`);
-    importedTxs = markDuplicates(applyImportMemory(await categorizeTxs(rows)));
+    // Pokud tu ještě zbývají neuložené transakce z předchozího pokusu
+    // (viz confirmImport), nezahazujeme je — připojíme nové k nim.
+    const fresh = markDuplicates(applyImportMemory(await categorizeTxs(rows)));
+    importedTxs = importedTxs.length ? importedTxs.concat(fresh) : fresh;
     renderImportResults();
   } catch(e) {
     showImportStatus('Chyba: ' + e.message, true);
@@ -1789,49 +1811,63 @@ async function confirmImport() {
   document.getElementById('importResults').style.opacity = '0.4';
 
   setLoading(true);
-  let ok = 0;
-  const failed = [];
-  for (const tx of selected) {
-    const finalAmount = Math.round(tx.type === 'expense' && tx.refund ? -tx.amount : tx.amount);
-    const newTx = { id: String(Date.now() + Math.random()), type: tx.type, desc: tx.desc, amount: finalAmount, cat: tx.cat, date: tx.date };
-    // Apps Script web app občas na rychlé opakované requesty spadne (lock/kvóta) —
-    // než transakci vzdáme, zkusíme ji uložit 3x s rostoucí prodlevou.
-    let saved = false;
-    for (let attempt = 1; attempt <= 3 && !saved; attempt++) {
-      try {
-        await apiAdd(newTx);
-        transactions.push(newTx);
-        saved = true;
-      } catch(e) {
-        console.error(`import add failed (pokus ${attempt}/3):`, e);
-        if (attempt < 3) await new Promise(r => setTimeout(r, 500 * attempt));
-      }
+  // Id se generují jednou, mimo retry — musí zůstat stejná napříč pokusy,
+  // jinak server nepozná, že jde o tutéž transakci, a zapsal by ji znovu.
+  const newTxs = selected.map(tx => ({
+    id: String(Date.now() + Math.random()),
+    type: tx.type,
+    desc: tx.desc,
+    amount: Math.round(tx.type === 'expense' && tx.refund ? -tx.amount : tx.amount),
+    cat: tx.cat,
+    date: tx.date
+  }));
+
+  let result = null, lastErr = null;
+  for (let attempt = 1; attempt <= 3 && !result; attempt++) {
+    try {
+      result = await apiAddBatch(newTxs);
+    } catch(e) {
+      lastErr = e;
+      console.error(`addBatch failed (pokus ${attempt}/3):`, e);
+      if (attempt < 3) await new Promise(r => setTimeout(r, 500 * attempt));
     }
-    if (saved) { ok++; if (importBtn) importBtn.textContent = `Ukládám… ${ok}/${selected.length}`; }
-    else failed.push(tx);
+  }
+
+  if (result) {
+    // Stav čteme ze serveru, ne z lokálního odhadu — jinak se UI rozejde
+    // s tabulkou, když se ztratí odpověď na zápis, který proběhl.
+    try {
+      transactions = await apiGet();
+      dataStale = false;
+      saveCache(transactions, CATEGORIES);
+    } catch(e) {
+      dataStale = true;
+      console.error('refresh po importu selhal:', e);
+    }
   }
   setLoading(false);
 
-  if (ok > 0) {
+  if (result) {
     const firstDate = selected[0].date;
     if (firstDate) selectedYear = parseDate(firstDate).getFullYear(); // FIX 1
     selectedMonth = -1;
     buildMonthPills();
-  }
-  render();
-
-  if (!failed.length) {
+    render();
     document.getElementById('importOverlay').classList.remove('open');
     resetImport();
-    if (ok > 0) showError(`✓ Importováno ${ok} transakcí`);
+    showError(result.skipped
+      ? `✓ Importováno ${result.added} transakcí · ${result.skipped} přeskočeno (už v tabulce byly)`
+      : `✓ Importováno ${result.added} transakcí`);
   } else {
-    // Nezmizí beze stopy: necháme neuložené transakce v přehledu, ať jde
-    // rovnou zkusit "Importovat vybrané" znovu, místo tichého úbytku.
-    importedTxs = failed;
+    // Nezmizí beze stopy: necháme transakce v přehledu, ať jde rovnou zkusit
+    // "Importovat vybrané" znovu, místo tichého úbytku.
     renderImportResults();
     document.getElementById('importResults').style.opacity = '1';
+    // Drop-zóna zůstávala schovaná až do refreshe stránky — bez tohohle
+    // nešlo bez zavření dialogu nahrát další výpis po neúspěšném pokusu.
+    document.getElementById('importDrop').style.display = 'block';
     if (importBtn) { importBtn.disabled = false; importBtn.textContent = 'Importovat vybrané'; }
-    showImportStatus(`⚠ Uloženo ${ok}/${selected.length}. ${failed.length} transakcí se nepodařilo uložit (viz níže) — zkus Importovat vybrané znovu.`, true);
+    showImportStatus(`⚠ Uložení selhalo: ${lastErr.message}. Nic se neuložilo — zkus Importovat vybrané znovu, nebo rovnou nahraj další výpis.`, true);
   }
 }
 
