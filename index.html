@@ -1546,6 +1546,34 @@ async function forceRefresh() {
   }
 }
 
+// Když načtení selže kvůli latenci Apps Scriptu, zkusíme to za chvíli sami.
+// Bez toho zůstane appka na starých datech, dokud uživatel neklikne na ⟳.
+function scheduleRevalidate(attempt) {
+  if (attempt > 2) return;
+  setTimeout(async () => {
+    // Během importu do dat nesaháme, přepsali bychom rozdělanou práci.
+    if (document.getElementById('importOverlay').classList.contains('open') || isLoading) {
+      scheduleRevalidate(attempt);
+      return;
+    }
+    try {
+      const res = await apiGet(dataRev);
+      if (!res.unchanged) {
+        transactions = res.txs;
+        applyCats(res.cats);
+        refreshCatSelects();
+      }
+      dataRev = res.rev || dataRev;
+      dataStale = false;
+      saveCache(transactions, CATEGORIES);
+      render();
+    } catch(e) {
+      console.error(`revalidace na pozadí selhala (pokus ${attempt}/2):`, e);
+      scheduleRevalidate(attempt + 1);
+    }
+  }, attempt * 15000);
+}
+
 // ── INIT ─────────────────────────────────────────────────
 async function init() {
   document.getElementById('dateInput').value = new Date().toISOString().split('T')[0];
@@ -1580,6 +1608,7 @@ async function init() {
       ? 'Nepodařilo se aktualizovat data, zobrazena poslední uložená verze: ' + e.message
       : 'Nepodařilo se načíst data: ' + e.message);
     if (!cache) transactions = [];
+    scheduleRevalidate(1);
   } finally {
     setLoading(false);
   }
