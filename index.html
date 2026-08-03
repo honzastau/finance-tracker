@@ -562,11 +562,21 @@ async function fetchJsonRetry(url, opts, attempts = 3) {
 // Řádek chodí kompaktně jako pole [id, type, desc, amount, cat, date]. Starší
 // nasazení posílá objekty s klíči, takže zvládneme oba tvary — appka na Pages
 // se aktualizuje jindy než Apps Script.
+// Datum normalizujeme hned při dekódování na "YYYY-MM-DD". Díky tomu je cache
+// nezávislá na tom, v jakém tvaru ho zrovna posílá nasazená verze backendu —
+// jinak by v ní po změně formátu zůstala stará data až do příštího zápisu.
+function normDate(v) {
+  const s = String(v);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  const d = parseDate(s);
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
 function decodeTx(r) {
   if (Array.isArray(r)) {
     return {
       id: String(r[0]), type: String(r[1]), desc: String(r[2]),
-      amount: Math.round(Number(r[3])), cat: String(r[4] ?? ''), date: String(r[5])
+      amount: Math.round(Number(r[3])), cat: String(r[4] ?? ''), date: normDate(r[5])
     };
   }
   return {
@@ -575,7 +585,7 @@ function decodeTx(r) {
     desc:   String(r.desc),
     amount: Math.round(Number(r.amount)),
     cat:    String(r.cat ?? r.category ?? r.kat ?? r.kategorie ?? ''),
-    date:   String(r.date),
+    date:   normDate(r.date),
   };
 }
 
