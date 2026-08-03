@@ -430,7 +430,7 @@ header { background:var(--surface); border-bottom:1px solid var(--border); paddi
 
     <div class="card" style="margin-top:16px">
       <div class="card-header">
-        <span class="card-title">Transakce</span>
+        <span class="card-title">Transakce <span id="txCount" style="color:var(--muted);font-weight:400;font-size:11px;"></span></span>
         <div style="display:flex;align-items:center;gap:0;">
           <div class="filter-row">
             <button class="ftab active" onclick="setFilter('all',this)">Vše</button>
@@ -1106,6 +1106,8 @@ function render() {
   document.getElementById('statIncomeSub').innerHTML  = fmtSub(income,  prevIncome,  true);
   document.getElementById('statExpenseSub').innerHTML = fmtSub(expense, prevExpense, false);
 
+  document.getElementById('txCount').textContent = `(${txs.length})`;
+
   renderChart();
   renderLineChart();
   renderDonut('income',  txs, income);
@@ -1709,15 +1711,25 @@ async function confirmImport() {
 
   setLoading(true);
   let ok = 0;
+  const failed = [];
   for (const tx of selected) {
     const finalAmount = Math.round(tx.type === 'expense' && tx.refund ? -tx.amount : tx.amount);
     const newTx = { id: String(Date.now() + Math.random()), type: tx.type, desc: tx.desc, amount: finalAmount, cat: tx.cat, date: tx.date };
-    try {
-      await apiAdd(newTx);
-      transactions.push(newTx);
-      ok++;
-      if (importBtn) importBtn.textContent = `Ukládám… ${ok}/${selected.length}`;
-    } catch(e) { console.error('import add failed:', e); }
+    // Apps Script web app občas na rychlé opakované requesty spadne (lock/kvóta) —
+    // než transakci vzdáme, zkusíme ji uložit 3x s rostoucí prodlevou.
+    let saved = false;
+    for (let attempt = 1; attempt <= 3 && !saved; attempt++) {
+      try {
+        await apiAdd(newTx);
+        transactions.push(newTx);
+        saved = true;
+      } catch(e) {
+        console.error(`import add failed (pokus ${attempt}/3):`, e);
+        if (attempt < 3) await new Promise(r => setTimeout(r, 500 * attempt));
+      }
+    }
+    if (saved) { ok++; if (importBtn) importBtn.textContent = `Ukládám… ${ok}/${selected.length}`; }
+    else failed.push(tx);
   }
   setLoading(false);
 
@@ -1727,11 +1739,21 @@ async function confirmImport() {
     selectedMonth = -1;
     buildMonthPills();
   }
-
-  document.getElementById('importOverlay').classList.remove('open');
-  resetImport();
   render();
-  if (ok > 0) showError(`✓ Importováno ${ok} transakcí`);
+
+  if (!failed.length) {
+    document.getElementById('importOverlay').classList.remove('open');
+    resetImport();
+    if (ok > 0) showError(`✓ Importováno ${ok} transakcí`);
+  } else {
+    // Nezmizí beze stopy: necháme neuložené transakce v přehledu, ať jde
+    // rovnou zkusit "Importovat vybrané" znovu, místo tichého úbytku.
+    importedTxs = failed;
+    renderImportResults();
+    document.getElementById('importResults').style.opacity = '1';
+    if (importBtn) { importBtn.disabled = false; importBtn.textContent = 'Importovat vybrané'; }
+    showImportStatus(`⚠ Uloženo ${ok}/${selected.length}. ${failed.length} transakcí se nepodařilo uložit (viz níže) — zkus Importovat vybrané znovu.`, true);
+  }
 }
 
 // ── LOGIN ────────────────────────────────────────────────
